@@ -29,7 +29,8 @@ export const AuthProvider = ({ children }) => {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
-  const register = async (email, password, role, fullName, phone) => {
+  // 💡 MODIFICATION : Ajout du paramètre subscription
+  const register = async (email, password, role, fullName, phone, subscription) => {
     // 1. Créer l'utilisateur dans Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     
@@ -39,6 +40,8 @@ export const AuthProvider = ({ children }) => {
       email: email,
       phone: phone,
       role: role, // 'client' ou 'proprietaire'
+      // 💡 NOUVEAU : Sauvegarde de la structure d'abonnement
+      abonnement: subscription,
       createdAt: new Date()
     });
     return userCredential;

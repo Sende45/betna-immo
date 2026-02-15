@@ -11,7 +11,7 @@ function Login() {
   // RÉCUPÉRATION DES FONCTIONS DU CONTEXTE
   const { login, register } = useAuth(); 
 
-  // 💡 Détermine si on est sur la page inscription selon l'URL
+  // Détermine si on est sur la page inscription selon l'URL
   const isRegistering = location.pathname === '/register';
 
   // États pour gérer les champs du formulaire
@@ -19,7 +19,7 @@ function Login() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  // 💡 ÉTAT POUR LE RÔLE (POUR L'INSCRIPTION)
+  // ÉTAT POUR LE RÔLE (POUR L'INSCRIPTION)
   const [role, setRole] = useState('client'); 
 
   // Fonction pour gérer la soumission
@@ -27,8 +27,17 @@ function Login() {
     e.preventDefault();
     try {
       if (isRegistering) {
+        // 💡 CRÉATION DE LA STRUCTURE D'ABONNEMENT PAR DÉFAUT
+        const defaultSubscription = {
+            plan: "aucun", // aucun, pro, premium
+            actif: false,
+            dateDebut: null,
+            dateFin: null
+        };
+
         // A. & B. Créer l'utilisateur + document Firestore via le contexte
-        await register(email, password, role, fullName, phone);
+        // 💡 On passe le rôle ET l'abonnement par défaut
+        await register(email, password, role, fullName, phone, defaultSubscription);
         alert("Compte créé avec succès !");
         
         // 💡 Redirection intelligente basée sur le rôle
@@ -74,7 +83,7 @@ function Login() {
             
             {isRegistering && (
               <>
-                {/* 💡 SÉLECTEUR DE RÔLE */}
+                {/* SÉLECTEUR DE RÔLE */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Je suis un :</label>
                   <select 

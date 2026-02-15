@@ -1,0 +1,66 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isLoggedin() {
+      return request.auth != null;
+    }
+    
+    // 🛡️ Fonction sécurisée pour récupérer le rôle et le statut de l'utilisateur qui fait la requête
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // 1. Règles pour la collection "biens"
+    match /biens/{bienId} {
+      // 💡 MODIFICATION : 
+      // Tout le monde peut lire si le bien est 'Vérifié'
+      // OU si l'utilisateur est admin
+      // OU si l'utilisateur est le propriétaire du bien (pour qu'il voie ses biens "En attente")
+      allow read: if resource.data.status == 'Vérifié' || 
+                    (isLoggedin() && (getUserData().role == 'admin' || resource.data.proprioId == request.auth.uid));
+      
+      // 💡 MODIFICATION : Seuls les propriétaires connectés, non bloqués ET abonnés peuvent créer des biens
+      allow create: if isLoggedin() 
+                    && getUserData().role == 'proprietaire' 
+                    && getUserData().status == 'actif'
+                    && getUserData().abonnement.actif == true; 
+      
+      // 💡 MODIFICATION : Seul le propriétaire du bien ou l'admin peut modifier, si le proprio est actif et abonné
+      allow update: if isLoggedin() 
+                    && getUserData().status == 'actif' 
+                    && getUserData().abonnement.actif == true
+                    && (getUserData().role == 'admin' || resource.data.proprioId == request.auth.uid);
+      
+      // Seul l'admin peut supprimer
+      allow delete: if isLoggedin() && getUserData().role == 'admin';
+    }
+    
+    // Règles pour la collection "properties" (si tu l'utilises toujours)
+    match /properties/{propertyId} {
+      allow read: if true;
+      
+      // 💡 MODIFICATION : Sécurisation ici aussi
+      allow create: if isLoggedin() && getUserData().role == 'proprietaire' && getUserData().status == 'actif' && getUserData().abonnement.actif == true;
+      
+      allow update, delete: if isLoggedin() && getUserData().status == 'actif' && getUserData().abonnement.actif == true && (getUserData().role == 'admin' || resource.data.ownerId == request.auth.uid);
+    }
+
+    // 2. Règles pour la collection "users"
+    match /users/{userId} {
+      // Autorise la lecture pour l'admin ET pour l'utilisateur lui-même
+      allow read: if isLoggedin() && (request.auth.uid == userId || getUserData().role == 'admin');
+      
+      // Permettre la création initiale du document user par l'utilisateur lui-même
+      allow create: if isLoggedin() && request.auth.uid == userId;
+      
+      // 💡 MODIFICATION : Autorise la mise à jour pour l'admin ou l'utilisateur lui-même
+      // Seul l'admin peut modifier le statut "bloqué/actif" ou le plan d'abonnement.
+      allow update: if isLoggedin() && (
+        request.auth.uid == userId || getUserData().role == 'admin'
+      );
+    }
+  }
+}
