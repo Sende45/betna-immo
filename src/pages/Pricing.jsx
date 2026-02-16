@@ -19,7 +19,7 @@ function PricingPage() {
         
         {/* 💡 CONTENEUR DU PRIX */}
         <div className="mt-8 bg-gray-100 p-6 rounded-lg">
-          <p className="text-4xl font-bold text-blue-600">200€ <span className="text-sm font-medium text-gray-500">/mois</span></p>
+          <p className="text-4xl font-bold text-blue-600">300€ <span className="text-sm font-medium text-gray-500">/mois</span></p>
           <ul className="text-left mt-4 text-sm text-gray-700 space-y-2">
             <li>✅ Publication illimitée</li>
             <li>✅ Mise en avant des annonces</li>
