@@ -17,7 +17,6 @@
         "firebase-debug.*.log",
         "*.local"
       ]
-      
     }
   ],
   "hosting": {
@@ -33,5 +32,24 @@
         "destination": "/index.html"
       }
     ]
+  },
+  "emulators": {
+    "functions": {
+      "host": "127.0.0.1",
+      "port": 5050
+    },
+    "firestore": {
+      "host": "127.0.0.1",
+      "port": 8080
+    },
+    "ui": {
+      "enabled": true,
+      "host": "127.0.0.1",
+      "port": 4001
+    },
+    "logging": {
+      "host": "127.0.0.1",
+      "port": 4501
+    }
   }
 }

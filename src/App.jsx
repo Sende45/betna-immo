@@ -5,11 +5,12 @@ import Login from './pages/Login';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Dashboard from './pages/Dashboard'; 
-// 💡 CORRECTION : Nom de fichier sans accent
 import DashboardProprietaire from './pages/DashboardProprietaire';
 import Catalogue from './pages/Catalogue';
 import DashboardAdmin from './pages/DashboardAdmin';
 import DashboardClient from './pages/DashboardClient'; 
+// 💡 AJOUT : Import de la page de tarification
+import PricingPage from './pages/Pricing'; 
 import { AuthProvider, useAuth } from './context/AuthContext'; 
 
 // Composant pour protéger les routes
@@ -42,8 +43,15 @@ function App() {
               <Route path="/register" element={<Login />} />
               <Route path="/catalogue" element={<Catalogue />} />
               
-              {/* Route admin - pensez à la protéger avec ProtectedRoute si nécessaire */}
-              <Route path="/admin" element={<DashboardAdmin />} /> 
+              {/* 💡 MODIFICATION : Route admin protégée */}
+              <Route path="/admin" element={
+                <ProtectedRoute allowedRole="admin">
+                  <DashboardAdmin />
+                </ProtectedRoute>
+              } /> 
+              
+              {/* 💡 AJOUT : Route vers la page de paiement */}
+              <Route path="/abonnement" element={<PricingPage />} />
               
               {/* Route Générale Dashboard */}
               <Route path="/dashboard" element={

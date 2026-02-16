@@ -1,5 +1,6 @@
+// src/context/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { auth, db } from '../firebase'; // 👈 Assurez-vous que le chemin est correct
+import { auth, db } from '../firebase'; 
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -10,13 +11,18 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 💡 Écoute les changements d'état de connexion de Firebase
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         // Récupère les données supplémentaires (rôle, nom, etc.) dans Firestore
         const docRef = doc(db, "users", currentUser.uid);
         const docSnap = await getDoc(docRef);
-        setUser({ ...currentUser, ...docSnap.data() });
+        
+        // 💡 AMÉLIORATION : Vérifie si le document existe avant de merger
+        if (docSnap.exists()) {
+          setUser({ ...currentUser, ...docSnap.data() });
+        } else {
+          setUser({ ...currentUser }); // Auth sans document Firestore
+        }
       } else {
         setUser(null);
       }
@@ -29,18 +35,20 @@ export const AuthProvider = ({ children }) => {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
-  // 💡 MODIFICATION : Ajout du paramètre subscription
-  const register = async (email, password, role, fullName, phone, subscription) => {
+  // 💡 MODIFICATION : Paramètre subscription sécurisé
+  const register = async (email, password, role, fullName, phone, subscription = { actif: false, stripeId: null }) => {
     // 1. Créer l'utilisateur dans Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     
-    // 2. Créer le document utilisateur dans Firestore avec son rôle
+    // 2. Créer le document utilisateur dans Firestore
     await setDoc(doc(db, "users", userCredential.user.uid), {
       fullName: fullName,
       email: email,
       phone: phone,
       role: role, // 'client' ou 'proprietaire'
-      // 💡 NOUVEAU : Sauvegarde de la structure d'abonnement
+      // 💡 AMÉLIORATION : Ajout du statut par défaut
+      status: 'actif',
+      // Sauvegarde de la structure d'abonnement
       abonnement: subscription,
       createdAt: new Date()
     });
