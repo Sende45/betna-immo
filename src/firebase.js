@@ -18,14 +18,16 @@ const firebaseConfig = {
   measurementId: "G-JHL58FKP3W"
 };
 
-// ✅ Initialiser Firebase
+// ✅ Initialiser Firebase (UNE SEULE FOIS dans tout le projet)
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-// ✅ Initialiser les services
+// ✅ Initialiser les services liés à CETTE app
 const auth = getAuth(app);
 const db = getFirestore(app);
-const functions = getFunctions(app);
 
-// ✅ EXPORTER pour les utiliser ailleurs (Stripe notamment)
+// ⭐ LA LIGNE QUI RÉPARE TON BUG STRIPE
+const functions = getFunctions(app, "us-central1");
+
+// ✅ EXPORTER pour les utiliser ailleurs
 export { app, analytics, auth, db, functions };

@@ -1,4 +1,3 @@
-// functions/index.js
 const functions = require("firebase-functions");
 const Stripe = require("stripe");
 // 💡 AJOUT : Chargement du fichier .env situé dans le dossier functions
@@ -15,10 +14,16 @@ const stripe = Stripe(stripeSecret, {
     apiVersion: '2022-11-15' 
 });
 
-exports.createCheckoutSession = functions.https.onCall(async (data, context) => {
+// 💡 MODIF : Import v2 HTTPS callable
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+
+// ✅ Fonction createCheckoutSession compatible Firebase v2
+exports.createCheckoutSession = onCall({ region: "us-central1" }, async (request) => {
+  const { auth, data } = request;
+
   // Vérification de l'authentification
-  if (!context.auth) {
-    throw new functions.https.HttpsError(
+  if (!auth) {
+    throw new HttpsError(
       "unauthenticated",
       "L'utilisateur doit être connecté pour s'abonner."
     );
@@ -26,15 +31,15 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
 
   // Vérification des données reçues
   if (!data || !data.priceId) {
-    throw new functions.https.HttpsError(
+    throw new HttpsError(
       "invalid-argument",
       "Le paramètre priceId est obligatoire."
     );
   }
 
-  const userEmail = context.auth.token.email;
+  const userEmail = auth.token.email;
   if (!userEmail) {
-    throw new functions.https.HttpsError(
+    throw new HttpsError(
       "failed-precondition",
       "Impossible de récupérer l'adresse email de l'utilisateur."
     );
@@ -53,12 +58,12 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
       success_url: `${domain}/success`,
       cancel_url: `${domain}/cancel`,
       customer_email: userEmail,
-      metadata: { userId: context.auth.uid },
+      metadata: { userId: auth.uid },
     });
 
     return { url: session.url };
   } catch (error) {
     console.error("Erreur createCheckoutSession:", error);
-    throw new functions.https.HttpsError("internal", error.message || "Erreur Stripe inconnue");
+    throw new HttpsError("internal", error.message || "Erreur Stripe inconnue");
   }
 });
