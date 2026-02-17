@@ -8,7 +8,9 @@ import Dashboard from './pages/Dashboard';
 import DashboardProprietaire from './pages/DashboardProprietaire';
 import Catalogue from './pages/Catalogue';
 import DashboardAdmin from './pages/DashboardAdmin';
-import DashboardClient from './pages/DashboardClient'; 
+import DashboardClient from './pages/DashboardClient';
+import ChatImmobilier from './pages/ChatImmobilier';
+
 // 💡 AJOUT : Import de la page de tarification
 import PricingPage from './pages/Pricing'; 
 import { AuthProvider, useAuth } from './context/AuthContext'; 
@@ -49,6 +51,11 @@ function App() {
                   <DashboardAdmin />
                 </ProtectedRoute>
               } /> 
+              <Route path="/chat" element={
+              <ProtectedRoute>
+                <ChatImmobilier />
+              </ProtectedRoute>
+} />
               
               {/* 💡 AJOUT : Route vers la page de paiement */}
               <Route path="/abonnement" element={<PricingPage />} />
