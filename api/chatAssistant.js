@@ -41,8 +41,23 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    const reply =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text || "Pas de réponse.";
+let reply = "Pas de réponse.";
+
+// Vérifie toutes les structures possibles
+if (data?.candidates?.length > 0) {
+  const firstCandidate = data.candidates[0];
+  
+  // Cas classique : content.parts
+  if (firstCandidate?.content?.parts?.length > 0) {
+    reply = firstCandidate.content.parts.map(p => p.text).join("\n");
+  }
+  
+  // Cas alternatif : content.text directement
+  else if (firstCandidate?.content?.text) {
+    reply = firstCandidate.content.text;
+  }
+}
+
 
     return res.status(200).json({ reply });
   } catch (error) {
