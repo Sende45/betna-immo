@@ -61,7 +61,7 @@ exports.analyzeBienDescription = onRequest(
   {
     region: "us-central1",
     secrets: ["GEMINI_KEY"],
-    cors: true, // ⬅️ Ajouté ici aussi pour éviter les erreurs d'analyse côté client
+    cors: true,
   },
   async (req, res) => {
     try {
@@ -102,7 +102,7 @@ exports.chatAssistant = onRequest(
   {
     region: "us-central1",
     secrets: ["GEMINI_KEY"],
-    cors: true, // ⬅️ L'AJOUT QUE VOUS AVEZ DEMANDÉ
+    cors: true,
   },
   async (req, res) => {
     try {
@@ -129,30 +129,55 @@ Tu es un conseiller immobilier expert en Côte d'Ivoire 😎🏡. Réponds de fa
 }
 Historique : ${historyText}\nuser: ${message}`;
 
-      // 3️⃣ Gemini
-      const geminiKey = await GEMINI_KEY.value();
-      const genAI = new GoogleGenerativeAI(geminiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const result = await model.generateContent(prompt);
-      let text = (await result.response).text();
-      
-      // Nettoyage et Parsing
-      text = text.replace(/```json/g, "").replace(/```/g, "").trim();
-      let parsed = JSON.parse(text);
+      // 3️⃣ Appel Gemini avec Gestion d'Erreur Robuste
+      try {
+        const geminiKey = await GEMINI_KEY.value();
+        const genAI = new GoogleGenerativeAI(geminiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        let text = response.text();
+        
+        // Nettoyage Markdown
+        text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+        
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch (e) {
+          // Si le JSON échoue, on encapsule le texte brut
+          parsed = { 
+            message: text, 
+            criteria: { type: "", ville: "", budget: "", chambres: "", objectif: "" },
+            next_question: "" 
+          };
+        }
 
-      // 4️⃣ Sauvegarde Firestore
-      const now = admin.firestore.FieldValue.serverTimestamp();
-      const batch = db.batch();
-      const msgCol = db.collection("conversations").doc(userId).collection("messages");
-      
-      batch.set(msgCol.doc(), { role: "user", text: message, timestamp: now });
-      batch.set(msgCol.doc(), { role: "assistant", text: parsed.message, timestamp: now });
-      await batch.commit();
+        // 4️⃣ Sauvegarde Firestore
+        const now = admin.firestore.FieldValue.serverTimestamp();
+        const batch = db.batch();
+        const msgCol = db.collection("conversations").doc(userId).collection("messages");
+        
+        batch.set(msgCol.doc(), { role: "user", text: message, timestamp: now });
+        batch.set(msgCol.doc(), { role: "assistant", text: parsed.message, timestamp: now });
+        await batch.commit();
 
-      res.json(parsed);
+        return res.status(200).json(parsed);
+
+      } catch (geminiError) {
+        console.error("ERREUR API GEMINI:", geminiError);
+        // On renvoie un objet JSON propre même si l'API Gemini échoue
+        return res.status(200).json({ 
+          message: "Désolé, j'ai un petit souci technique avec mon cerveau IA. Réessaye dans une minute ! 🔌",
+          criteria: { type: "", ville: "", budget: "", chambres: "", objectif: "" },
+          next_question: ""
+        });
+      }
+
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Erreur chatAssistant" });
+      console.error("ERREUR GENERALE:", error);
+      res.status(500).json({ error: "Erreur interne au serveur" });
     }
   }
 );
