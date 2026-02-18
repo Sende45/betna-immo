@@ -11,6 +11,9 @@ const ChatImmobilier = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // 🔹 Remplace cette URL par l'URL exacte de ta fonction chatAssistant déployée
+  const CHAT_ENDPOINT = "https://us-central1-betna-immo-app.cloudfunctions.net/chatAssistant";
+
   const sendMessage = async () => {
     if (!input.trim()) return;
 
@@ -19,23 +22,27 @@ const ChatImmobilier = () => {
     setLoading(true);
 
     try {
-      const res = await fetch("https://chatassistant-xxxxx-uc.a.run.app", {
+      const res = await fetch(CHAT_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.uid, message: input })
       });
 
+      if (!res.ok) {
+        throw new Error(`Erreur HTTP: ${res.status}`);
+      }
+
       const data = await res.json();
 
       let biens = [];
       if (data.criteria) {
-        // Recherche les biens correspondant aux critères
+        // 🔹 Recherche les biens correspondant aux critères
         const q = query(
           collection(db, "properties"),
-          where("ville", "==", data.criteria.ville || ""),
-          where("type", "==", data.criteria.type || "")
-          // Pour budget ou chambres, tu peux ajouter un filtre supplémentaire
+          ...(data.criteria.ville ? [where("ville", "==", data.criteria.ville)] : []),
+          ...(data.criteria.type ? [where("type", "==", data.criteria.type)] : [])
         );
+
         const snapshot = await getDocs(q);
         biens = snapshot.docs.map(doc => doc.data());
       }
@@ -46,8 +53,8 @@ const ChatImmobilier = () => {
       ]);
       setInput("");
     } catch (err) {
-      console.error(err);
-      setMessages([...newMessages, { role: "assistant", text: "Erreur IA 😓", biens: [] }]);
+      console.error("Erreur chatAssistant :", err);
+      setMessages([...newMessages, { role: "assistant", text: "Erreur IA 😓 Vérifie que la fonction chatAssistant est déployée et que la clé GEMINI_KEY est configurée.", biens: [] }]);
     } finally {
       setLoading(false);
     }
@@ -69,7 +76,7 @@ const ChatImmobilier = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                 {msg.biens.map((bien, i) => (
                   <div key={i} className="border rounded p-2 flex flex-col">
-                    <img src={bien.imageUrl} alt={bien.title} className="h-32 w-full object-cover rounded mb-2" />
+                    {bien.imageUrl && <img src={bien.imageUrl} alt={bien.title} className="h-32 w-full object-cover rounded mb-2" />}
                     <div className="font-semibold">{bien.title}</div>
                     <div>{bien.type} - {bien.chambres} chambres</div>
                     <div>{bien.ville} - {bien.prix.toLocaleString()} FCFA</div>
