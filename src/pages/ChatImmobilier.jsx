@@ -11,7 +11,7 @@ const ChatImmobilier = () => {
 
   // IMPORTANT : Vérifie bien cette URL dans ta console Firebase (onglet Functions)
   // Si l'URL se termine par /chatAssistant dans la console, ajoute-le ici.
-  const FIREBASE_FUNCTION_URL = "https://chatassistant-yvnpsmqvga-uc.a.run.app"; 
+  const FIREBASE_FUNCTION_URL = "https://chatassistant-yvnpnf6u3a-uc.a.run.app"; 
 
   // Auto-scroll vers le bas à chaque nouveau message
   useEffect(() => {
