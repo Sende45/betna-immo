@@ -1,7 +1,10 @@
 {
-  "functions": {
-    "api/*.js": {
-      "runtime": "nodejs22.x"
+  "version": 2,
+  "ignores": ["functions/**"],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
-  }
+  ]
 }
