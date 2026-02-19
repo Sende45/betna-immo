@@ -1,183 +1,202 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, User, Phone, Building, ArrowRight, UserPlus } from 'lucide-react';
+import { 
+  Mail, Lock, Eye, EyeOff, User, Phone, 
+  Building2, ArrowRight, UserPlus, Sparkles 
+} from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-// IMPORT DU CONTEXTE
-import { useAuth } from '../context/AuthContext'; 
+import { useAuth } from '../context/AuthContext';
 
 function Login() {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  // RÉCUPÉRATION DES FONCTIONS DU CONTEXTE
-  const { login, register } = useAuth(); 
+  const { login, register } = useAuth();
 
-  // Détermine si on est sur la page inscription selon l'URL
   const isRegistering = location.pathname === '/register';
 
-  // États pour gérer les champs du formulaire
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  // ÉTAT POUR LE RÔLE (POUR L'INSCRIPTION)
-  const [role, setRole] = useState('client'); 
+  const [role, setRole] = useState('client');
 
-  // Fonction pour gérer la soumission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       if (isRegistering) {
-        // 💡 CRÉATION DE LA STRUCTURE D'ABONNEMENT PAR DÉFAUT
         const defaultSubscription = {
-            plan: "aucun", // aucun, pro, premium
-            actif: false,
-            dateDebut: null,
-            dateFin: null
+          plan: "aucun",
+          actif: false,
+          dateDebut: null,
+          dateFin: null
         };
-
-        // A. & B. Créer l'utilisateur + document Firestore via le contexte
-        // 💡 On passe le rôle ET l'abonnement par défaut
         await register(email, password, role, fullName, phone, defaultSubscription);
-        alert("Compte créé avec succès !");
-        
-        // 💡 Redirection intelligente basée sur le rôle
         navigate(role === 'proprietaire' ? '/dashboard-proprio' : '/dashboard-client');
       } else {
-        // Connexion via le contexte
         await login(email, password);
-        
-        // 💡 La redirection basée sur le rôle se fera dans le composant de tableau de bord
-        // ou via le ProtectedRoute dans App.jsx
-        navigate('/'); 
+        navigate('/');
       }
     } catch (error) {
-      console.error(error);
-      alert(error.message); // Afficher l'erreur (email déjà utilisé, etc.)
+      alert(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Éléments de décoration en arrière-plan */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-100 rounded-full blur-3xl opacity-50" />
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-100 rounded-full blur-3xl opacity-50" />
+      </div>
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="flex justify-center">
-            <Building className="h-12 w-12 text-emerald-600" />
+          <div className="bg-white p-3 rounded-2xl shadow-xl shadow-emerald-100 border border-emerald-50">
+            <Building2 className="h-10 w-10 text-emerald-600" />
+          </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          {isRegistering ? "Créer votre compte" : "Connectez-vous"}
+        <h2 className="mt-6 text-center text-4xl font-extrabold text-gray-900 tracking-tight">
+          {isRegistering ? "Bienvenue chez nous" : "Ravi de vous revoir"}
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          {isRegistering ? "Déjà membre ?" : "Nouveau sur Betna Immo ?"}
-          
-          <Link 
-            to={isRegistering ? "/login" : "/register"}
-            className="ml-2 font-medium text-emerald-600 hover:text-emerald-500"
-          >
-            {isRegistering ? "Connectez-vous ici" : "Créez un compte gratuitement"}
-          </Link>
+        <p className="mt-2 text-center text-gray-500 font-medium">
+          {isRegistering ? "Commencez votre aventure immobilière" : "Accédez à votre espace personnel"}
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-sm rounded-2xl sm:px-10 border border-gray-100">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+      <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div className="bg-white/80 backdrop-blur-xl py-10 px-6 shadow-[0_20px_50px_rgba(0,0,0,0.05)] rounded-3xl sm:px-12 border border-white">
+          <form className="space-y-5" onSubmit={handleSubmit}>
             
             {isRegistering && (
-              <>
-                {/* SÉLECTEUR DE RÔLE */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Je suis un :</label>
-                  <select 
-                    value={role} 
-                    onChange={e => setRole(e.target.value)}
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-md"
-                  >
-                    <option value="client">Client</option>
-                    <option value="proprietaire">Propriétaire</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Nom Complet</label>
-                  <div className="mt-1 relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input type="text" required value={fullName} onChange={e => setFullName(e.target.value)} className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="Jean Dupont" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Téléphone</label>
-                  <div className="mt-1 relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input type="tel" required value={phone} onChange={e => setPhone(e.target.value)} className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="+235 99 00 00 00" />
-                  </div>
-                </div>
-              </>
-            )}
-
-             <div>
-                  <label className="block text-sm font-medium text-gray-700">Adresse Email</label>
-                  <div className="mt-1 relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                      placeholder="votre@email.com"
-                    />
+              <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="mb-5">
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Vous êtes ?</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {['client', 'proprietaire'].map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setRole(r)}
+                        className={`py-2 px-4 rounded-xl text-sm font-medium border-2 transition-all ${
+                          role === r 
+                          ? 'border-emerald-600 bg-emerald-50 text-emerald-700' 
+                          : 'border-gray-100 bg-gray-50 text-gray-500 hover:bg-gray-100'
+                        }`}
+                      >
+                        {r.charAt(0).toUpperCase() + r.slice(1)}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Mot de passe</label>
-                  <div className="mt-1 relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      className="appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                      placeholder="••••••••"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
+                <div className="space-y-4">
+                  <div>
+                    <div className="relative group">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                      <input 
+                        type="text" 
+                        required 
+                        value={fullName} 
+                        onChange={e => setFullName(e.target.value)} 
+                        className="block w-full pl-11 pr-4 py-3 bg-gray-50 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none text-gray-700 placeholder-gray-400" 
+                        placeholder="Nom complet" 
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="relative group">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                      <input 
+                        type="tel" 
+                        required 
+                        value={phone} 
+                        onChange={e => setPhone(e.target.value)} 
+                        className="block w-full pl-11 pr-4 py-3 bg-gray-50 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none text-gray-700 placeholder-gray-400" 
+                        placeholder="Téléphone" 
+                      />
+                    </div>
                   </div>
                 </div>
-
-            {!isRegistering && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <input id="remember-me" type="checkbox" className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded" />
-                    <label className="ml-2 block text-sm text-gray-900">Se souvenir de moi</label>
-                  </div>
-                  <div className="text-sm">
-                    <a href="#" className="font-medium text-emerald-600 hover:text-emerald-500">Mot de passe oublié ?</a>
-                  </div>
-                </div>
+              </div>
             )}
 
             <div>
-              <button type="submit" className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-emerald-700 transition">
-                {isRegistering ? (
-                    <>
-                        <UserPlus size={18} />
-                        S'inscrire
-                    </>
-                ) : (
-                    <>
-                        <ArrowRight size={18} />
-                        Se connecter
-                    </>
-                )}
-              </button>
+              <div className="relative group">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="block w-full pl-11 pr-4 py-3 bg-gray-50 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none text-gray-700 placeholder-gray-400"
+                  placeholder="Adresse email"
+                />
+              </div>
             </div>
+
+            <div>
+              <div className="relative group">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="block w-full pl-11 pr-12 py-3 bg-gray-50 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none text-gray-700 placeholder-gray-400"
+                  placeholder="Mot de passe"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-emerald-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            </div>
+
+            {!isRegistering && (
+              <div className="flex items-center justify-between px-1">
+                <label className="flex items-center cursor-pointer group">
+                  <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 transition-all" />
+                  <span className="ml-2 text-sm text-gray-500 group-hover:text-gray-700 transition-colors">Rester connecté</span>
+                </label>
+                <a href="#" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">Oublié ?</a>
+              </div>
+            )}
+
+            <button 
+              type="submit" 
+              disabled={isLoading}
+              className="w-full flex justify-center items-center gap-3 py-4 px-6 rounded-xl text-white bg-gray-900 hover:bg-emerald-600 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-gray-200 font-bold overflow-hidden relative group"
+            >
+              {isLoading ? (
+                <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  {isRegistering ? <UserPlus size={20} /> : <Sparkles size={20} />}
+                  <span>{isRegistering ? "Créer mon compte" : "Se connecter"}</span>
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
           </form>
+
+          <div className="mt-8 pt-6 border-t border-gray-100">
+            <p className="text-center text-sm text-gray-500">
+              {isRegistering ? "Vous avez déjà un compte ?" : "Pas encore de compte ?"}
+              <Link 
+                to={isRegistering ? "/login" : "/register"}
+                className="ml-2 font-bold text-emerald-600 hover:text-emerald-700 underline-offset-4 hover:underline transition-all"
+              >
+                {isRegistering ? "Connectez-vous" : "Inscrivez-vous gratuitement"}
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
