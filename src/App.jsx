@@ -1,19 +1,20 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Home from './pages/Home';
-import PropertyDetail from './pages/PropertyDetail';
-import Login from './pages/Login'; 
+import { lazy, Suspense } from 'react'; 
 import Header from './components/Header';
 import Footer from './components/Footer';
-import Dashboard from './pages/Dashboard'; 
-import DashboardProprietaire from './pages/DashboardProprietaire';
-import Catalogue from './pages/Catalogue';
-import DashboardAdmin from './pages/DashboardAdmin';
-import DashboardClient from './pages/DashboardClient';
-import ChatImmobilier from './pages/ChatImmobilier';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
-// 💡 AJOUT : Import de la page de tarification
-import PricingPage from './pages/Pricing'; 
-import { AuthProvider, useAuth } from './context/AuthContext'; 
+// Chargement dynamique des pages pour la performance
+const Home = lazy(() => import('./pages/Home'));
+const PropertyDetail = lazy(() => import('./pages/PropertyDetail'));
+const Login = lazy(() => import('./pages/Login'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const DashboardProprietaire = lazy(() => import('./pages/DashboardProprietaire'));
+const Catalogue = lazy(() => import('./pages/Catalogue'));
+const DashboardAdmin = lazy(() => import('./pages/DashboardAdmin'));
+const DashboardClient = lazy(() => import('./pages/DashboardClient'));
+const ChatImmobilier = lazy(() => import('./pages/ChatImmobilier'));
+const PricingPage = lazy(() => import('./pages/Pricing'));
 
 // Composant pour protéger les routes
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -24,7 +25,7 @@ const ProtectedRoute = ({ children, allowedRole }) => {
   }
   
   if (allowedRole && user.role !== allowedRole) {
-    return <Navigate to="/" />; // Redirige si mauvais rôle
+    return <Navigate to="/" />;
   }
   
   return children;
@@ -37,51 +38,47 @@ function App() {
         <div className="flex flex-col min-h-screen">
           <Header />
           <main className="flex-grow">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/property/:id" element={<PropertyDetail />} />
-              
-              <Route path="/login" element={<Login />} /> 
-              <Route path="/register" element={<Login />} />
-              <Route path="/catalogue" element={<Catalogue />} />
-              
-              {/* 💡 MODIFICATION : Route admin protégée */}
-              <Route path="/admin" element={
-                <ProtectedRoute allowedRole="admin">
-                  <DashboardAdmin />
-                </ProtectedRoute>
-              } /> 
-              <Route path="/chat" element={
-              <ProtectedRoute>
-                <ChatImmobilier />
-              </ProtectedRoute>
-} />
-              
-              {/* 💡 AJOUT : Route vers la page de paiement */}
-              <Route path="/abonnement" element={<PricingPage />} />
-              
-              {/* Route Générale Dashboard */}
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              
-              {/* Route spécifique Propriétaire */}
-              <Route path="/dashboard-proprio" element={
-                <ProtectedRoute allowedRole="proprietaire">
-                  <DashboardProprietaire />
-                </ProtectedRoute>
-              } />
+            {/* Suspense gère l'attente pendant que le JS de la page charge */}
+            <Suspense fallback={<div className="p-10 text-center">Chargement de la page...</div>}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/property/:id" element={<PropertyDetail />} />
+                <Route path="/login" element={<Login />} /> 
+                <Route path="/register" element={<Login />} />
+                <Route path="/catalogue" element={<Catalogue />} />
+                <Route path="/abonnement" element={<PricingPage />} />
+                
+                <Route path="/admin" element={
+                  <ProtectedRoute allowedRole="admin">
+                    <DashboardAdmin />
+                  </ProtectedRoute>
+                } /> 
 
-              {/* Route spécifique Client */}
-              <Route path="/dashboard-client" element={
-                <ProtectedRoute allowedRole="client">
-                  <DashboardClient />
-                </ProtectedRoute>
-              } />
-              
-            </Routes>
+                <Route path="/chat" element={
+                  <ProtectedRoute>
+                    <ChatImmobilier />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/dashboard-proprio" element={
+                  <ProtectedRoute allowedRole="proprietaire">
+                    <DashboardProprietaire />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/dashboard-client" element={
+                  <ProtectedRoute allowedRole="client">
+                    <DashboardClient />
+                  </ProtectedRoute>
+                } />
+              </Routes>
+            </Suspense>
           </main>
           <Footer />
         </div>
