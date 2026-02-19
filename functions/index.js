@@ -67,7 +67,7 @@ exports.analyzeBienDescription = onRequest(
     try {
       const geminiKey = await GEMINI_KEY.value();
       const genAI = new GoogleGenerativeAI(geminiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
 
       const description = req.body.description;
       if (!description) return res.status(400).send("Description manquante.");
@@ -85,9 +85,12 @@ Description : ${description}`;
 
       const result = await model.generateContent(prompt);
       let text = (await result.response).text();
-      text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+      
+      // Nettoyage robuste
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const cleanJson = jsonMatch ? jsonMatch[0] : text;
 
-      res.status(200).json(JSON.parse(text));
+      res.status(200).json(JSON.parse(cleanJson));
     } catch (error) {
       console.error("Erreur Gemini (Analyze):", error);
       res.status(500).send("Erreur lors de l'analyse.");
@@ -105,11 +108,18 @@ exports.chatAssistant = onRequest(
     cors: true,
   },
   async (req, res) => {
+    // Gestion manuelle du CORS pour éviter les erreurs Localhost
+    res.set("Access-Control-Allow-Origin", "*");
+    if (req.method === "OPTIONS") {
+      res.set("Access-Control-Allow-Methods", "POST");
+      res.set("Access-Control-Allow-Headers", "Content-Type");
+      return res.status(204).send("");
+    }
+
     try {
       const { userId, message } = req.body;
       if (!userId || !message) {
-        console.warn("Requête incomplète: userId ou message manquant.");
-        return res.status(400).json({ error: "Données manquantes" });
+        return res.status(400).json({ message: "Données manquantes" });
       }
 
       const db = admin.firestore();
@@ -121,15 +131,25 @@ exports.chatAssistant = onRequest(
       const history = [];
       snapshot.forEach(doc => history.unshift(doc.data()));
 
-      // 2️⃣ Construction du prompt
+      // 2️⃣ Construction du prompt (MODIFIE ICI pour inclure tes nouvelles instructions)
       let historyText = history.map(m => `${m.role}: ${m.text}`).join("\n");
       const prompt = `
-Tu es un conseiller immobilier expert en Côte d'Ivoire 😎🏡. Réponds de façon ludique en JSON uniquement :
+Tu es un conseiller immobilier expert en Côte d'Ivoire 😎🏡.
+Ton but est d'aider le client à trouver son logement idéal.
+Tu dois :
+- Lui répondre poliment et de façon ludique
+- Lui demander son budget
+- Demander le nombre de pièces (chambres)
+- Savoir s'il veut un appartement ou une maison
+- Proposer des quartiers adaptés (Cocody, Marcory, Bingerville, etc.)
+
+Réponds UNIQUEMENT en JSON sous ce format :
 {
-  "message": "ta réponse ici",
+  "message": "ta réponse ludique ici avec tes questions",
   "criteria": { "type": "", "ville": "", "budget": "", "chambres": "", "objectif": "" },
-  "next_question": "ta prochaine question ici"
+  "next_question": "la question suivante la plus pertinente"
 }
+
 Historique récent :
 ${historyText}
 user: ${message}`;
@@ -138,21 +158,19 @@ user: ${message}`;
       try {
         const geminiKey = await GEMINI_KEY.value();
         const genAI = new GoogleGenerativeAI(geminiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
         
-        console.log("Appel Gemini pour l'utilisateur:", userId);
         const result = await model.generateContent(prompt);
         const response = await result.response;
         let text = response.text();
         
-        // Nettoyage Markdown pour le JSON
-        text = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        
+        // Nettoyage JSON strict (extrait seulement ce qui est entre { })
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
         let parsed;
+        
         try {
-          parsed = JSON.parse(text);
+          parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text);
         } catch (e) {
-          console.error("Échec du parsing JSON Gemini. Texte brut reçu:", text);
           parsed = { 
             message: text, 
             criteria: { type: "", ville: "", budget: "", chambres: "", objectif: "" },
@@ -160,7 +178,7 @@ user: ${message}`;
           };
         }
 
-        // 4️⃣ Sauvegarde Firestore (en arrière-plan)
+        // 4️⃣ Sauvegarde Firestore
         const now = admin.firestore.FieldValue.serverTimestamp();
         const msgCol = db.collection("conversations").doc(userId).collection("messages");
         
@@ -172,18 +190,17 @@ user: ${message}`;
         return res.status(200).json(parsed);
 
       } catch (geminiError) {
-        console.error("ERREUR API GEMINI (Chat):", geminiError);
-        // On retourne la clé "message" pour éviter le "Pas de réponse" sur le front
+        console.error("ERREUR API GEMINI:", geminiError);
         return res.status(200).json({ 
-          message: "Désolé, j'ai eu un petit souci technique. Peux-tu reformuler ta question ? 🔌",
-          criteria: { type: "", ville: "", budget: "", chambres: "", objectif: "" },
+          message: "Désolé, j'ai eu un petit souci technique avec mon API. Peux-tu reformuler ? 🔌",
+          criteria: {},
           next_question: ""
         });
       }
 
     } catch (error) {
-      console.error("ERREUR SERVEUR GENERALE:", error);
-      res.status(500).json({ error: "Erreur interne au serveur" });
+      console.error("ERREUR SERVEUR:", error);
+      res.status(500).json({ message: "Erreur interne au serveur" });
     }
   }
 );
