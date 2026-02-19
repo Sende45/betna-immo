@@ -89,7 +89,7 @@ Description : ${description}`;
 
       res.status(200).json(JSON.parse(text));
     } catch (error) {
-      console.error("Erreur Gemini :", error);
+      console.error("Erreur Gemini (Analyze):", error);
       res.status(500).send("Erreur lors de l'analyse.");
     }
   }
@@ -107,46 +107,52 @@ exports.chatAssistant = onRequest(
   async (req, res) => {
     try {
       const { userId, message } = req.body;
-      if (!userId || !message) return res.status(400).json({ error: "Données manquantes" });
+      if (!userId || !message) {
+        console.warn("Requête incomplète: userId ou message manquant.");
+        return res.status(400).json({ error: "Données manquantes" });
+      }
 
       const db = admin.firestore();
       
-      // 1️⃣ Historique
+      // 1️⃣ Récupération de l'historique
       const snapshot = await db.collection("conversations").doc(userId).collection("messages")
         .orderBy("timestamp", "desc").limit(10).get();
       
       const history = [];
       snapshot.forEach(doc => history.unshift(doc.data()));
 
-      // 2️⃣ Prompt
+      // 2️⃣ Construction du prompt
       let historyText = history.map(m => `${m.role}: ${m.text}`).join("\n");
       const prompt = `
-Tu es un conseiller immobilier expert en Côte d'Ivoire 😎🏡. Réponds de façon ludique en JSON :
+Tu es un conseiller immobilier expert en Côte d'Ivoire 😎🏡. Réponds de façon ludique en JSON uniquement :
 {
-  "message": "réponse",
+  "message": "ta réponse ici",
   "criteria": { "type": "", "ville": "", "budget": "", "chambres": "", "objectif": "" },
-  "next_question": ""
+  "next_question": "ta prochaine question ici"
 }
-Historique : ${historyText}\nuser: ${message}`;
+Historique récent :
+${historyText}
+user: ${message}`;
 
-      // 3️⃣ Appel Gemini avec Gestion d'Erreur Robuste
+      // 3️⃣ Appel Gemini
       try {
         const geminiKey = await GEMINI_KEY.value();
         const genAI = new GoogleGenerativeAI(geminiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         
+        console.log("Appel Gemini pour l'utilisateur:", userId);
         const result = await model.generateContent(prompt);
         const response = await result.response;
         let text = response.text();
         
-        // Nettoyage Markdown
+        // Nettoyage Markdown pour le JSON
         text = text.replace(/```json/g, "").replace(/```/g, "").trim();
         
         let parsed;
         try {
           parsed = JSON.parse(text);
         } catch (e) {
-          // Si le JSON échoue, on encapsule le texte brut
+          console.error("Échec du parsing JSON Gemini. Texte brut reçu:", text);
           parsed = { 
             message: text, 
             criteria: { type: "", ville: "", budget: "", chambres: "", objectif: "" },
@@ -154,29 +160,29 @@ Historique : ${historyText}\nuser: ${message}`;
           };
         }
 
-        // 4️⃣ Sauvegarde Firestore
+        // 4️⃣ Sauvegarde Firestore (en arrière-plan)
         const now = admin.firestore.FieldValue.serverTimestamp();
-        const batch = db.batch();
         const msgCol = db.collection("conversations").doc(userId).collection("messages");
         
-        batch.set(msgCol.doc(), { role: "user", text: message, timestamp: now });
-        batch.set(msgCol.doc(), { role: "assistant", text: parsed.message, timestamp: now });
-        await batch.commit();
+        await Promise.all([
+          msgCol.add({ role: "user", text: message, timestamp: now }),
+          msgCol.add({ role: "assistant", text: parsed.message, timestamp: now })
+        ]);
 
         return res.status(200).json(parsed);
 
       } catch (geminiError) {
-        console.error("ERREUR API GEMINI:", geminiError);
-        // On renvoie un objet JSON propre même si l'API Gemini échoue
+        console.error("ERREUR API GEMINI (Chat):", geminiError);
+        // On retourne la clé "message" pour éviter le "Pas de réponse" sur le front
         return res.status(200).json({ 
-          message: "Désolé, j'ai un petit souci technique avec mon cerveau IA. Réessaye dans une minute ! 🔌",
+          message: "Désolé, j'ai eu un petit souci technique. Peux-tu reformuler ta question ? 🔌",
           criteria: { type: "", ville: "", budget: "", chambres: "", objectif: "" },
           next_question: ""
         });
       }
 
     } catch (error) {
-      console.error("ERREUR GENERALE:", error);
+      console.error("ERREUR SERVEUR GENERALE:", error);
       res.status(500).json({ error: "Erreur interne au serveur" });
     }
   }
