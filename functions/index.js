@@ -65,9 +65,12 @@ exports.analyzeBienDescription = onRequest(
   },
   async (req, res) => {
     try {
-      const geminiKey = await GEMINI_KEY.value();
+      // 💡 CORRECTION : Récupération robuste de la clé (Local vs Cloud)
+      const geminiKey = process.env.GEMINI_KEY || await GEMINI_KEY.value();
       const genAI = new GoogleGenerativeAI(geminiKey);
-      const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
+      
+      // 💡 CORRECTION : Nom du modèle (sans le préfixe models/)
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       const description = req.body.description;
       if (!description) return res.status(400).send("Description manquante.");
@@ -131,7 +134,7 @@ exports.chatAssistant = onRequest(
       const history = [];
       snapshot.forEach(doc => history.unshift(doc.data()));
 
-      // 2️⃣ Construction du prompt (MODIFIE ICI pour inclure tes nouvelles instructions)
+      // 2️⃣ Construction du prompt
       let historyText = history.map(m => `${m.role}: ${m.text}`).join("\n");
       const prompt = `
 Tu es un conseiller immobilier expert en Côte d'Ivoire 😎🏡.
@@ -156,15 +159,18 @@ user: ${message}`;
 
       // 3️⃣ Appel Gemini
       try {
-        const geminiKey = await GEMINI_KEY.value();
+        // 💡 CORRECTION : Récupération robuste de la clé
+        const geminiKey = process.env.GEMINI_KEY || await GEMINI_KEY.value();
         const genAI = new GoogleGenerativeAI(geminiKey);
-        const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
+        
+        // 💡 CORRECTION : Utilisation du nom de modèle stable
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         
         const result = await model.generateContent(prompt);
         const response = await result.response;
         let text = response.text();
         
-        // Nettoyage JSON strict (extrait seulement ce qui est entre { })
+        // Nettoyage JSON strict
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         let parsed;
         

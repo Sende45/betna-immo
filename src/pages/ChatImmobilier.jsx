@@ -9,11 +9,16 @@ const ChatImmobilier = () => {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef(null);
 
-  // IMPORTANT : Vérifie bien cette URL dans ta console Firebase (onglet Functions)
-  // Si l'URL se termine par /chatAssistant dans la console, ajoute-le ici.
-  const FIREBASE_FUNCTION_URL = "https://chatassistant-yvnpnf6u3a-uc.a.run.app"; 
+  // 💡 MODIFICATION : Gestion dynamique de l'URL (Local vs Production)
+  const getApiUrl = () => {
+    if (import.meta.env.DEV) {
+      // Ton URL locale d'après tes logs de terminal
+      return "http://127.0.0.1:5050/betna-immo-app/us-central1/chatAssistant";
+    }
+    // Ton URL de production (Firebase Cloud)
+    return "https://us-central1-betna-immo-app.cloudfunctions.net/chatAssistant";
+  };
 
-  // Auto-scroll vers le bas à chaque nouveau message
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
@@ -22,21 +27,19 @@ const ChatImmobilier = () => {
     if (!input.trim() || !user || loading) return;
 
     const userMessage = input;
-    
-    // Ajout immédiat du message utilisateur à l'état local
     setMessages((prev) => [...prev, { role: "user", text: userMessage }]);
     setInput("");
     setLoading(true);
 
     try {
-      const res = await fetch(FIREBASE_FUNCTION_URL, {
+      const res = await fetch(getApiUrl(), {
         method: "POST",
         headers: { 
             "Content-Type": "application/json"
         },
         body: JSON.stringify({ 
             userId: user.uid, 
-            message: userMessage 
+            message: userMessage // 💡 Vérifie dans ton index.js si c'est 'message' ou 'prompt'
         }),
       });
 
@@ -45,8 +48,6 @@ const ChatImmobilier = () => {
       }
       
       const data = await res.json();
-
-      // On récupère data.message car ton backend index.js renvoie { message, criteria, ... }
       const botReply = data.message || "Désolé, je n'ai pas pu générer de réponse.";
 
       setMessages((prev) => [...prev, { role: "assistant", text: botReply }]);
@@ -98,7 +99,6 @@ const ChatImmobilier = () => {
           </div>
         ))}
 
-        {/* Indicateur de chargement dynamique */}
         {loading && (
           <div className="flex items-center gap-2 text-emerald-600 font-medium italic animate-pulse">
             <Loader2 className="animate-spin" size={18} />

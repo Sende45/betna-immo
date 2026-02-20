@@ -1,51 +1,53 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion'; // Ajout de Framer Motion
 import PropertyCard from "../components/PropertyCard";
-import { Search, ShieldCheck, MapPin, Zap, ArrowRight, Building, ArrowUpDown, Star, Users, Clock } from 'lucide-react';
+import { Search, ShieldCheck, MapPin, ArrowRight, Building, ArrowUpDown, Star, Users, Clock } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, query, onSnapshot } from 'firebase/firestore'; 
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logementImage from "../assets/logement.png"; 
 
+// Variantes pour les animations de liste
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: { y: 0, opacity: 1, transition: { duration: 0.5, ease: "easeOut" } }
+};
+
 function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
-
   const [searchTerm, setSearchTerm] = useState('');
   const [showOnlyVerified, setShowOnlyVerified] = useState(false);
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState('newest'); 
-  
-  const [heroVisible, setHeroVisible] = useState(false); 
 
   useEffect(() => {
     const q = query(collection(db, "biens"));
-    
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setProperties(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });
-
-    setTimeout(() => setHeroVisible(true), 150);
-
     return () => unsubscribe();
   }, []);
 
   const handleCtaClick = () => {
-    if (user) {
-      navigate('/dashboard-proprio');
-    } else {
-      navigate('/login');
-    }
+    user ? navigate('/dashboard-proprio') : navigate('/login');
   };
 
   const filteredProperties = properties.filter(property => {
     const matchesSearch = property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           property.location.toLowerCase().includes(searchTerm.toLowerCase());
-    
     const matchesVerified = !showOnlyVerified || property.status === 'Vérifié';
-    
     return matchesSearch && matchesVerified;
   }).sort((a, b) => {
     if (sortOrder === 'priceAsc') return a.price - b.price;
@@ -53,180 +55,214 @@ function Home() {
     return 0;
   });
 
-  const PropertySkeleton = () => (
-    <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 animate-pulse">
-      <div className="bg-gray-200 h-48 sm:h-52 rounded-2xl mb-5"></div>
-      <div className="h-5 bg-gray-200 rounded-full w-3/4 mb-3"></div>
-      <div className="h-4 bg-gray-200 rounded-full w-1/2"></div>
-    </div>
-  );
-
-  const trustFeatures = [
-    { icon: ShieldCheck, title: "Biens Vérifiés", description: "Inspection physique" },
-    { icon: Users, title: "Propriétaires Fiables", description: "Profils vérifiés" },
-    { icon: Clock, title: "Service Rapide", description: "Réponse en 24h" },
-  ];
-
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 overflow-x-hidden">
+    <div className="min-h-screen bg-[#FAFAFA] text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
       
-      {/* 🏙️ Hero Section - Responsive ajusté */}
-      <header className="relative bg-white border-b border-gray-100 overflow-hidden">
-        <div className="container mx-auto px-4 sm:px-6 py-12 md:py-16 lg:py-20 flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+      {/* 🏙️ Hero Section */}
+      <header className="relative bg-white pt-10 pb-24 lg:pt-20 lg:pb-32 overflow-hidden">
+        <div className="container mx-auto px-4 sm:px-6 flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
           
-          <div className="flex-1 text-center lg:text-left z-10 w-full">
-            <div className={`inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-xs sm:text-sm font-semibold mb-4 sm:mb-6 border border-emerald-100 transition-all duration-700
-              ${heroVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-6"}`}>
-              <Star className="h-4 w-4 fill-emerald-500 animate-pulse" />
+          <motion.div 
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            className="flex-1 text-center lg:text-left z-10"
+          >
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm font-bold mb-6 border border-emerald-100 shadow-sm"
+            >
+              <Star className="h-4 w-4 fill-emerald-500 text-emerald-500" />
               <span>N°1 de l'immobilier fiable au Tchad</span>
-            </div>
+            </motion.div>
             
-            <h1 className={`text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-950 mb-5 sm:mb-6 leading-[1.1] transition-all duration-1000
-              ${heroVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
-              Votre chez-vous au Tchad,{" "}
-              <span className="text-emerald-600 inline-block animate-[pulse_3s_ease-in-out_infinite]">
+            <h1 className="text-5xl md:text-6xl lg:text-8xl font-black text-slate-950 mb-6 leading-tight tracking-tight">
+              Votre chez-vous, <br />
+              <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
                 en toute confiance
               </span>.
             </h1>
             
-            <p className={`text-lg sm:text-xl text-gray-600 mb-8 sm:mb-10 max-w-2xl mx-auto lg:mx-0 transition-all duration-1000 delay-200
-              ${heroVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
-              Louez ou achetez des biens inspectés par nos experts. Betna Immo sécurise votre recherche immobilière.
+            <p className="text-lg md:text-xl text-slate-600 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              Betna Immo redéfinit l'immobilier au Tchad. Trouvez des logements certifiés et sécurisés en quelques clics.
             </p>
             
-            <div className={`flex flex-col sm:flex-row gap-4 justify-center lg:justify-start transition-all duration-1000 delay-300
-              ${heroVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
-              <button 
+            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={handleCtaClick}
-                className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-full font-bold hover:bg-emerald-700 transition-all duration-300 text-base sm:text-lg shadow-lg shadow-emerald-200 hover:shadow-emerald-300 hover:-translate-y-0.5"
+                className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-bold text-lg shadow-xl shadow-emerald-200 flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors"
               >
-                Proposer un bien
-                <ArrowRight className="h-5 w-5" />
-              </button>
-              <a 
+                Proposer un bien <ArrowRight className="h-5 w-5" />
+              </motion.button>
+              <motion.a 
                 href="#listings"
-                className="flex items-center justify-center gap-2 bg-white text-gray-900 px-6 sm:px-8 py-3.5 sm:py-4 rounded-full font-bold hover:bg-gray-100 transition text-base sm:text-lg border border-gray-200"
+                whileHover={{ backgroundColor: "#f8fafc" }}
+                className="bg-white text-slate-900 px-8 py-4 rounded-2xl font-bold text-lg border border-slate-200 flex items-center justify-center"
               >
                 Explorer les biens
-              </a>
+              </motion.a>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="flex-1 relative w-full h-[300px] sm:h-[400px] lg:h-[500px]">
-            <div className="absolute -inset-6 bg-gradient-to-tr from-emerald-200/30 via-transparent to-emerald-100/30 blur-3xl animate-pulse"></div>
+          {/* Image de droite avec animation */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1 }}
+            className="flex-1 relative w-full group"
+          >
+            <div className="absolute -inset-4 bg-emerald-400/20 blur-3xl rounded-full group-hover:bg-emerald-400/30 transition-all duration-700"></div>
             <img 
-               src={logementImage}
-               alt="Immobilier Betna"
-               className="rounded-3xl shadow-2xl w-full h-full object-cover transition-transform duration-[4000ms] hover:scale-105"
+              src={logementImage}
+              alt="Immobilier Tchad"
+              className="relative rounded-[2.5rem] shadow-2xl w-full aspect-[4/3] object-cover border-8 border-white"
             />
-            {/* Carte flottante masquée sur petit écran pour éviter les soucis de recouvrement */}
-            <div className={`absolute -bottom-6 -left-6 sm:-bottom-10 sm:-left-10 bg-white p-4 sm:p-5 rounded-2xl shadow-xl border flex items-center gap-3 sm:gap-4 transition-all duration-1000 delay-500 hidden sm:flex
-              ${heroVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
-              <ShieldCheck className="h-10 w-10 sm:h-14 sm:w-14 text-emerald-500 bg-emerald-100 p-2 sm:p-3 rounded-2xl" />
-              <div>
-                <p className="font-bold text-lg sm:text-xl">Garantie Betna</p>
-                <p className="text-gray-500 text-sm sm:text-base">100% de biens vérifiés</p>
+            {/* Badge flottant interactif */}
+            <motion.div 
+              animate={{ y: [0, -10, 0] }}
+              transition={{ repeat: Infinity, duration: 4 }}
+              className="absolute -bottom-8 -left-8 bg-white p-6 rounded-3xl shadow-2xl border border-slate-50 hidden md:flex items-center gap-4"
+            >
+              <div className="bg-emerald-500 p-3 rounded-2xl shadow-lg shadow-emerald-200">
+                <ShieldCheck className="text-white h-8 w-8" />
               </div>
-            </div>
-          </div>
+              <div>
+                <p className="font-black text-xl text-slate-900 leading-none">100% Vérifié</p>
+                <p className="text-slate-500 font-medium">Sécurité garantie</p>
+              </div>
+            </motion.div>
+          </motion.div>
         </div>
       </header>
 
-      {/* 🚀 Barre de recherche flottante - Responsive */}
-      <section className="container mx-auto px-4 sm:px-6 -mt-8 sm:-mt-10 relative z-20">
-        <div className="bg-white p-3 sm:p-4 rounded-full shadow-xl border border-gray-100 flex flex-col md:flex-row gap-2 sm:gap-4 items-center">
-          <div className="relative w-full md:flex-grow">
-            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
+      {/* 🚀 Barre de recherche avec Glassmorphism */}
+      <section className="container mx-auto px-4 -mt-12 relative z-30">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="bg-white/80 backdrop-blur-xl p-3 rounded-[2rem] shadow-2xl border border-white/50 flex flex-col lg:flex-row gap-3"
+        >
+          <div className="relative flex-grow group">
+            <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-emerald-500 transition-colors group-focus-within:text-emerald-600" />
             <input 
               type="text"
-              placeholder="Ville, quartier, type de bien..."
+              placeholder="Dans quelle zone cherchez-vous ?"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 sm:py-4 rounded-full border border-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300 text-base sm:text-lg"
+              className="w-full pl-14 pr-6 py-5 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-emerald-500/20 text-lg transition-all"
             />
           </div>
           
-          <button 
+          <motion.button 
+            whileTap={{ scale: 0.98 }}
             onClick={() => setShowOnlyVerified(!showOnlyVerified)}
-            className={`w-full md:w-auto px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${showOnlyVerified ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+            className={`px-8 py-5 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all ${
+              showOnlyVerified ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
           >
-            <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6" />
-            {showOnlyVerified ? '✓ Vérifiés' : 'Logements Vérifiés'}
-          </button>
-        </div>
+            <ShieldCheck className="h-6 w-6" />
+            {showOnlyVerified ? 'Vérifiés uniquement' : 'Tous les logements'}
+          </motion.button>
+        </motion.div>
       </section>
 
-      {/* ✨ Section Confiance - Responsive */}
-      <section className="container mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {trustFeatures.map((feature, index) => (
-            <div key={index} className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4 sm:gap-5">
-              <feature.icon className="h-10 w-10 sm:h-12 sm:w-12 text-emerald-500 bg-emerald-100 p-2.5 sm:p-3 rounded-2xl" />
-              <div>
-                <h4 className="text-lg sm:text-xl font-bold text-gray-950">{feature.title}</h4>
-                <p className="text-sm sm:text-base text-gray-600">{feature.description}</p>
-              </div>
-            </div>
+      {/* ✨ Features de confiance */}
+      <section className="container mx-auto px-4 py-24">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            { icon: ShieldCheck, title: "Inspection physique", desc: "Chaque bien est visité par nos agents." },
+            { icon: Users, title: "Propriétaires certifiés", desc: "Nous vérifions l'identité des loueurs." },
+            { icon: Clock, title: "Support 24/7", desc: "Une assistance locale toujours disponible." },
+          ].map((f, i) => (
+            <motion.div 
+              key={i}
+              whileHover={{ y: -5 }}
+              className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all"
+            >
+              <f.icon className="h-14 w-14 text-emerald-600 bg-emerald-50 p-3 rounded-2xl mb-6" />
+              <h4 className="text-2xl font-bold mb-2">{f.title}</h4>
+              <p className="text-slate-500 text-lg leading-relaxed">{f.desc}</p>
+            </motion.div>
           ))}
         </div>
       </section>
 
-      {/* 🏠 Section Résultats - Responsive */}
-      <main id="listings" className="container mx-auto px-4 sm:px-6 pb-16 sm:pb-20">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8 sm:mb-10 md:mb-12">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-950 flex items-center gap-3">
-            <Building className="h-8 w-8 sm:h-10 sm:w-10 text-emerald-600" />
-            Dernières opportunités
-          </h2>
+      {/* 🏠 Grid de Résultats */}
+      <main id="listings" className="container mx-auto px-4 pb-32">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-6 mb-16">
+          <div>
+            <h2 className="text-4xl md:text-5xl font-black text-slate-950 mb-4 flex items-center gap-4">
+              Dernières pépites <Building className="text-emerald-600" />
+            </h2>
+            <p className="text-slate-500 text-lg">Découvrez les opportunités du jour sélectionnées pour vous.</p>
+          </div>
           
-          <div className="flex items-center gap-2 bg-white p-1.5 sm:p-2 rounded-full border shadow-sm w-full md:w-auto justify-center">
-            <ArrowUpDown className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 ml-2" />
+          <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 flex items-center gap-3 shadow-sm">
+            <ArrowUpDown className="h-5 w-5 text-slate-400" />
             <select 
               value={sortOrder} 
               onChange={(e) => setSortOrder(e.target.value)}
-              className="text-xs sm:text-sm text-gray-700 bg-transparent focus:outline-none pr-3 sm:pr-4 py-1"
+              className="bg-transparent font-bold text-slate-700 focus:outline-none cursor-pointer"
             >
-              <option value="newest">Plus récents</option>
-              <option value="priceAsc">Prix croissant</option>
-              <option value="priceDesc">Prix décroissant</option>
+              <option value="newest">Les plus récents</option>
+              <option value="priceAsc">Prix : Croissant</option>
+              <option value="priceDesc">Prix : Décroissant</option>
             </select>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+        >
           {loading ? (
-            Array(4).fill(0).map((_, i) => <PropertySkeleton key={i} />)
-          ) : filteredProperties.length > 0 ? (
-            filteredProperties.map(property => (
-              <div key={property.id} className="transition-all duration-300 hover:scale-[1.02] sm:hover:scale-[1.03] hover:shadow-2xl rounded-3xl">
-                <PropertyCard property={property} />
-              </div>
-            ))
+            Array(4).fill(0).map((_, i) => <div key={i} className="h-80 bg-slate-100 animate-pulse rounded-3xl" />)
           ) : (
-            <div className="text-center py-16 sm:py-20 col-span-full bg-white rounded-3xl border border-gray-100 shadow-sm px-4">
-              <Building className="h-16 w-16 sm:h-20 sm:w-20 text-gray-300 mx-auto mb-4 sm:mb-6" />
-              <p className="text-gray-500 text-xl sm:text-2xl font-semibold">Aucun bien ne correspond à vos critères.</p>
-              <p className="text-gray-400 mt-2 text-sm sm:text-base">Essayez de modifier votre recherche ou le filtre de vérification.</p>
-            </div>
+            <AnimatePresence>
+              {filteredProperties.map(property => (
+                <motion.div key={property.id} variants={itemVariants} layout>
+                  <PropertyCard property={property} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
           )}
-        </div>
+        </motion.div>
+
+        {!loading && filteredProperties.length === 0 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-32 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+            <Building className="h-20 w-20 text-slate-200 mx-auto mb-6" />
+            <p className="text-2xl font-bold text-slate-400">Aucun bien trouvé pour cette recherche</p>
+          </motion.div>
+        )}
       </main>
 
-      {/* 📞 CTA Section - Responsive */}
-      <section className="bg-gray-950 text-white rounded-t-[2rem] sm:rounded-t-[3rem] mt-10">
-        <div className="container mx-auto px-4 sm:px-6 py-16 sm:py-20 md:py-24 text-center">
-          <h3 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 sm:mb-6">Vous avez un bien à louer ?</h3>
-          <p className="text-gray-300 mb-10 sm:mb-12 max-w-2xl mx-auto text-base sm:text-lg md:text-xl leading-relaxed px-2">
-            Inscrivez votre bien en quelques clics. Notre équipe s'occupe de la vérification pour vous apporter des locataires sérieux.
+      {/* 📞 Footer CTA Premium */}
+      <section className="px-4 pb-12">
+        <motion.div 
+          whileHover={{ scale: 1.01 }}
+          className="container mx-auto bg-slate-950 rounded-[3rem] p-12 lg:p-24 relative overflow-hidden text-center"
+        >
+          <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 blur-[100px] rounded-full"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-teal-500/10 blur-[100px] rounded-full"></div>
+          
+          <h3 className="text-4xl md:text-6xl font-black text-white mb-8 relative">Prêt à louer votre bien ?</h3>
+          <p className="text-slate-400 text-xl max-w-2xl mx-auto mb-12 relative leading-relaxed">
+            Rejoignez des centaines de propriétaires qui font confiance à Betna pour trouver des locataires qualifiés et sérieux.
           </p>
-          <button 
+          <motion.button 
+            whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(16, 185, 129, 0.2)" }}
+            whileTap={{ scale: 0.95 }}
             onClick={handleCtaClick}
-            className="flex items-center gap-2 mx-auto bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-8 sm:px-10 py-4 sm:py-5 rounded-full font-bold hover:from-emerald-600 hover:to-emerald-700 transition-all duration-300 text-base sm:text-lg shadow-lg shadow-emerald-950/30 hover:scale-105"
+            className="relative bg-emerald-500 text-white px-12 py-5 rounded-[2rem] font-black text-xl flex items-center gap-3 mx-auto"
           >
-            Inscrire mon bien maintenant
-            <ArrowRight className="h-5 w-5" />
-          </button>
-        </div>
+            Inscrire mon bien <ArrowRight />
+          </motion.button>
+        </motion.div>
       </section>
     </div>
   );

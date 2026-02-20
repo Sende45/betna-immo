@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, CalendarCheck, User, Loader2, MapPin } from 'lucide-react';
-// 💡 IMPORT FIREBASE
+import { 
+  Heart, CalendarCheck, User, Loader2, MapPin, 
+  ArrowRight, property, Bookmark, ChevronRight, 
+  Clock, CheckCircle2, XCircle
+} from 'lucide-react';
 import { db } from '../firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext'; 
+import { motion, AnimatePresence } from 'framer-motion';
 
 function DashboardClient() {
   const { user } = useAuth();
@@ -14,20 +18,17 @@ function DashboardClient() {
   useEffect(() => {
     if (!user) return;
 
-    // 💡 1. Récupérer les favoris en temps réel
     const favQuery = query(collection(db, "favoris"), where("clientId", "==", user.uid));
     const unsubscribeFavs = onSnapshot(favQuery, (snapshot) => {
       setFavorites(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
-    // 💡 2. Récupérer les demandes de visite en temps réel
     const appQuery = query(collection(db, "visites"), where("clientId", "==", user.uid));
     const unsubscribeApps = onSnapshot(appQuery, (snapshot) => {
       setAppointments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });
 
-    // Nettoyage des abonnements
     return () => {
       unsubscribeFavs();
       unsubscribeApps();
@@ -35,80 +36,163 @@ function DashboardClient() {
   }, [user]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-3 mb-8">
-          <User className="w-9 h-9 text-emerald-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Mon Espace Client</h1>
-        </div>
+    <div className="min-h-screen bg-[#FDFDFD] p-4 md:p-8 pt-24 md:pt-32">
+      <div className="max-w-6xl mx-auto">
+        
+        {/* En-tête de bienvenue personnalisé */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="mb-12"
+        >
+          <div className="flex items-center gap-4 mb-2">
+            <div className="h-1 w-12 bg-emerald-500 rounded-full" />
+            <span className="text-emerald-600 font-bold uppercase tracking-widest text-xs">Espace Personnel</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black text-slate-950 tracking-tight flex items-center gap-4">
+            Bonjour, {user?.displayName?.split(' ')[0] || 'Cher Client'} <span className="animate-bounce">👋</span>
+          </h1>
+          <p className="text-slate-500 mt-2 font-medium text-lg">Retrouvez vos coups de cœur et gérez vos rendez-vous.</p>
+        </motion.div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
+          <div className="flex flex-col justify-center items-center py-32 gap-4">
+            <Loader2 className="w-12 h-12 text-emerald-500 animate-spin" />
+            <p className="text-slate-400 font-bold animate-pulse uppercase tracking-widest text-xs">Chargement de votre espace...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Favoris */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
-                <Heart className="text-red-500" /> Mes Favoris
-              </h2>
-              {favorites.length > 0 ? (
-                <ul className="space-y-3">
-                  {favorites.map(fav => (
-                    <li key={fav.id} className="p-4 border border-gray-100 rounded-lg flex justify-between items-center hover:shadow-sm transition">
-                      <div>
-                        <span className="font-medium text-gray-800">{fav.propertyTitle}</span>
-                        <p className="text-sm text-gray-500 flex items-center gap-1">
-                          <MapPin size={14} className="text-emerald-500"/>{fav.location}
-                        </p>
-                      </div>
-                      <span className="text-emerald-700 font-semibold">
-                        {parseInt(fav.price).toLocaleString('fr-FR')} FCFA
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="text-center py-8 text-gray-500 border-2 border-dashed rounded-xl">
-                  <Heart className="mx-auto h-12 w-12 text-gray-300" />
-                  <p className="mt-2">Aucun favori pour le moment.</p>
-                </div>
-              )}
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            
+            {/* Section Favoris */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <div className="flex items-center justify-between mb-6 px-2">
+                <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
+                  <Bookmark className="text-rose-500 fill-rose-500" size={28} /> Mes Coups de Cœur
+                </h2>
+                <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">
+                  {favorites.length} Biens
+                </span>
+              </div>
 
-            {/* Demandes de visite */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
-                <CalendarCheck className="text-sky-600" /> Mes Visites
-              </h2>
-              {appointments.length > 0 ? (
-                <ul className="space-y-3">
-                  {appointments.map(app => (
-                    <li key={app.id} className="p-4 border border-gray-100 rounded-lg flex justify-between items-center hover:shadow-sm transition">
-                      <div>
-                        <span className="font-medium text-gray-800">{app.propertyTitle}</span>
-                        <p className="text-sm text-gray-500">
-                          Date : {new Date(app.visitDate).toLocaleDateString('fr-FR')}
-                        </p>
+              <div className="space-y-4">
+                <AnimatePresence>
+                  {favorites.length > 0 ? (
+                    favorites.map((fav, index) => (
+                      <motion.div 
+                        key={fav.id}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.1 }}
+                        whileHover={{ x: 5 }}
+                        className="group bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all flex items-center gap-5"
+                      >
+                        <div className="h-20 w-20 bg-slate-100 rounded-2xl overflow-hidden flex-shrink-0">
+                          <img src={fav.propertyImage || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1000&auto=format&fit=crop"} alt="" className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        </div>
+                        <div className="flex-grow">
+                          <h3 className="font-black text-slate-900 leading-tight group-hover:text-emerald-600 transition-colors">{fav.propertyTitle}</h3>
+                          <p className="text-slate-400 text-sm flex items-center gap-1 font-medium mt-1">
+                            <MapPin size={14} className="text-slate-300"/> {fav.location}
+                          </p>
+                          <p className="text-emerald-600 font-black text-sm mt-1">
+                            {parseInt(fav.price).toLocaleString('fr-FR')} FCFA
+                          </p>
+                        </div>
+                        <button className="p-3 bg-slate-50 rounded-full text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-all">
+                          <ArrowRight size={20} />
+                        </button>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="bg-white border-2 border-dashed border-slate-100 rounded-[2.5rem] py-16 text-center">
+                      <Heart className="mx-auto h-12 w-12 text-slate-200 mb-4" />
+                      <p className="text-slate-400 font-bold">Aucun bien enregistré.</p>
+                      <button className="mt-4 text-emerald-600 font-black text-sm hover:underline">Parcourir les annonces</button>
+                    </div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+
+            {/* Section Rendez-vous */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="flex items-center justify-between mb-6 px-2">
+                <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
+                  <CalendarCheck className="text-sky-500" size={28} /> Agenda des Visites
+                </h2>
+              </div>
+
+              <div className="space-y-4">
+                {appointments.length > 0 ? (
+                  appointments.map((app, index) => (
+                    <motion.div 
+                      key={app.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`p-4 rounded-2xl ${
+                          app.status === 'Confirmé' ? 'bg-emerald-50 text-emerald-600' : 
+                          app.status === 'Annulé' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'
+                        }`}>
+                          <Clock size={24} />
+                        </div>
+                        <div>
+                          <h3 className="font-black text-slate-900 text-lg leading-tight">{app.propertyTitle}</h3>
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="text-slate-500 font-bold text-xs uppercase tracking-wider bg-slate-50 px-2 py-0.5 rounded-md">
+                              {new Date(app.visitDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        app.status === 'Confirmé' ? 'bg-emerald-100 text-emerald-700' :
-                        app.status === 'Annulé' ? 'bg-red-100 text-red-700' :
-                        'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {app.status}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="text-center py-8 text-gray-500 border-2 border-dashed rounded-xl">
-                  <CalendarCheck className="mx-auto h-12 w-12 text-gray-300" />
-                  <p className="mt-2">Aucune demande de visite.</p>
+                      
+                      <div className="flex items-center gap-3 self-end sm:self-center">
+                        <span className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                          app.status === 'Confirmé' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                          app.status === 'Annulé' ? 'bg-rose-50 text-rose-700 border-rose-100' :
+                          'bg-amber-50 text-amber-700 border-amber-100'
+                        }`}>
+                          {app.status === 'Confirmé' ? <CheckCircle2 size={12}/> : 
+                           app.status === 'Annulé' ? <XCircle size={12}/> : <Clock size={12}/>}
+                          {app.status || 'En attente'}
+                        </span>
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="bg-white border-2 border-dashed border-slate-100 rounded-[2.5rem] py-16 text-center">
+                    <CalendarCheck className="mx-auto h-12 w-12 text-slate-200 mb-4" />
+                    <p className="text-slate-400 font-bold">Aucune visite planifiée.</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Carte de réassurance Client */}
+              <div className="mt-10 p-8 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-[3rem] text-white relative overflow-hidden shadow-xl shadow-emerald-200">
+                <div className="relative z-10">
+                  <h4 className="text-xl font-black mb-2">Besoin d'aide ?</h4>
+                  <p className="text-emerald-50 text-sm font-medium opacity-90 leading-relaxed mb-6">
+                    Nos experts Betna sont là pour vous accompagner dans la négociation et la signature de votre contrat de bail.
+                  </p>
+                  <button className="bg-white text-emerald-600 px-6 py-3 rounded-2xl font-black text-sm hover:scale-105 transition-transform">
+                    Contacter le support 24/7
+                  </button>
                 </div>
-              )}
-            </div>
+                <Sparkles className="absolute -bottom-4 -right-4 w-32 h-32 text-white/10 rotate-12" />
+              </div>
+
+            </motion.div>
           </div>
         )}
       </div>

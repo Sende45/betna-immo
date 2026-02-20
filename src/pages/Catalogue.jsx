@@ -1,125 +1,167 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion'; // Pour les animations fluides
 import PropertyCard from "../components/PropertyCard";
-// ✅ Importation des icônes de lucide-react
-import { Search, ShieldCheck, Building, Loader2, CalendarDays, CalendarClock, LayoutGrid } from 'lucide-react';
-// 💡 IMPORT FIREBASE
+import { Search, ShieldCheck, Building, Loader2, CalendarDays, CalendarClock, LayoutGrid, FilterX } from 'lucide-react';
 import { db } from '../firebase';
-import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot } from 'firebase/firestore';
+
+// Variantes pour l'entrée des cartes
+const cardVariants = {
+  hidden: { opacity: 0, scale: 0.9, y: 20 },
+  visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.4 } },
+  exit: { opacity: 0, scale: 0.9, transition: { duration: 0.2 } }
+};
 
 function Catalogue() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showOnlyVerified, setShowOnlyVerified] = useState(false);
-  // 🆕 ÉTAT POUR LE FILTRE DE TYPE DE SÉJOUR
   const [typeSejour, setTypeSejour] = useState('tout'); 
-  // 💡 ÉTATS POUR LES DONNÉES RÉELLES
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 💡 CHARGER TOUS LES BIENS DEPUIS FIRESTORE EN TEMPS RÉEL
   useEffect(() => {
-    // 🛠️ MODIF : Requête avec tri par date de création (nécessite un index dans Firestore si non trié par défaut)
     const q = query(collection(db, "biens"));
-    
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      // 💡 On récupère bien l'ID ici avec doc.id
       setProperties(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
 
-  // Filtrage intelligent basé sur les données réelles
   const filteredProperties = properties.filter(property => {
-    const matchesSearch = property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          property.location.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // 💡 Filtre selon le statut renseigné dans Firestore
+    const matchesSearch = property.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          property.location?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesVerified = showOnlyVerified ? property.status === 'Vérifié' : true;
-    
-    // 🆕 Filtre selon le type de séjour
     const matchesType = typeSejour === 'tout' || property.typeSejour === typeSejour;
-    
     return matchesSearch && matchesVerified && matchesType;
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6 text-gray-900">
+    /* ✅ AJOUT : pt-24 (ou pt-32) pour éviter que le Header fixe ne cache le haut du catalogue */
+    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 pt-24 md:pt-32 text-slate-900">
       <div className="max-w-7xl mx-auto">
         
-        {/* 🛠️ Header de page Moderne */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-          <div className="flex items-center gap-4">
-              <div className='bg-emerald-100 p-3 rounded-2xl'>
-                <LayoutGrid className="w-8 h-8 text-emerald-600" />
-              </div>
-              <h1 className="text-3xl font-extrabold text-gray-950">Catalogue</h1>
+        {/* 🛠️ Header de page Premium */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          /* ✅ AJOUT : z-10 pour rester sous le Header principal et sous la barre de recherche sticky */
+          className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm shadow-slate-200/50 relative z-10"
+        >
+          <div className="flex items-center gap-6">
+            <div className='bg-emerald-500 p-4 rounded-3xl shadow-lg shadow-emerald-200'>
+              <LayoutGrid className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-black text-slate-950 tracking-tight">Catalogue</h1>
+              <p className='text-slate-500 font-medium'>Explorez nos {properties.length} propriétés d'exception</p>
+            </div>
           </div>
-          <p className='text-gray-500'>Trouvez votre prochain logement</p>
-        </div>
+          
+          <div className="hidden lg:flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <span className="text-sm font-bold text-slate-600 uppercase tracking-wider">Mise à jour en direct</span>
+          </div>
+        </motion.div>
 
-        {/* 🔍 Barre de recherche et filtres */}
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-8">
-            <div className='flex flex-col md:flex-row gap-4 mb-6'>
-                <div className="relative flex-grow">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input 
-                    type="text"
-                    placeholder="Quartier, ville, titre..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-5 py-3.5 rounded-full border border-gray-100 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-300 text-lg"
-                    />
-                </div>
-                
+        {/* 🔍 Zone de Recherche & Filtres Style "Glass" */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          /* ✅ MODIF : top-20 ou top-24 selon la taille de ton header pour un sticky parfait sans collision */
+          className="bg-white/70 backdrop-blur-xl p-2 rounded-[2.5rem] shadow-xl shadow-slate-200/40 border border-white mb-12 sticky top-20 md:top-24 z-40"
+        >
+          <div className='flex flex-col lg:flex-row gap-2'>
+            <div className="relative flex-grow group">
+              <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+              <input 
+                type="text"
+                placeholder="Où souhaitez-vous habiter ?"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-16 pr-6 py-5 rounded-[2rem] bg-transparent border-none focus:ring-0 text-lg font-medium placeholder:text-slate-400"
+              />
+            </div>
+
+            <div className="flex p-2 gap-2 bg-slate-100/50 rounded-[2rem]">
+              {[
+                {id: 'tout', label: 'Tous', icon: null}, 
+                {id: 'long', label: 'Long séjour', icon: CalendarDays}, 
+                {id: 'court', label: 'Court séjour', icon: CalendarClock}
+              ].map(type => (
                 <button 
-                    onClick={() => setShowOnlyVerified(!showOnlyVerified)}
-                    className={`px-8 py-3.5 rounded-full text-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${showOnlyVerified ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+                  key={type.id}
+                  onClick={() => setTypeSejour(type.id)}
+                  className={`px-6 py-3 rounded-full text-sm font-bold flex items-center gap-2 transition-all duration-300 ${
+                    typeSejour === type.id 
+                    ? 'bg-white text-emerald-600 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-800'
+                  }`}
                 >
-                    <ShieldCheck className="h-5 w-5" />
-                    {showOnlyVerified ? '✓ Vérifiés' : 'Biens Vérifiés'}
+                  {type.icon && <type.icon size={16} />}
+                  {type.label}
                 </button>
+              ))}
             </div>
-
-            {/* 🆕 FILTRES DE TYPE DE SÉJOUR */}
-            <div className="flex flex-wrap gap-3 pt-6 border-t border-gray-100">
-                {[
-                    {id: 'tout', label: 'Tous'}, 
-                    {id: 'long', label: 'Long séjour', icon: CalendarDays}, 
-                    {id: 'court', label: 'Court séjour', icon: CalendarClock}
-                ].map(type => (
-                    <button 
-                        key={type.id}
-                        onClick={() => setTypeSejour(type.id)}
-                        className={`px-5 py-2.5 rounded-full text-sm font-semibold flex items-center gap-2 transition duration-300 ${typeSejour === type.id ? 'bg-gray-950 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                    >
-                        {type.icon && <type.icon size={18} className={typeSejour === type.id ? 'text-emerald-400' : 'text-emerald-600'} />}
-                        {type.label}
-                    </button>
-                ))}
-            </div>
-        </div>
+            
+            <button 
+              onClick={() => setShowOnlyVerified(!showOnlyVerified)}
+              className={`px-8 py-5 rounded-[2rem] text-sm font-black transition-all flex items-center justify-center gap-3 ${
+                showOnlyVerified 
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' 
+                : 'bg-slate-900 text-white hover:bg-slate-800'
+              }`}
+            >
+              <ShieldCheck className="h-5 w-5" />
+              {showOnlyVerified ? 'VÉRIFIÉS ✓' : 'VOIR VÉRIFIÉS'}
+            </button>
+          </div>
+        </motion.div>
         
-        {/* 🏠 Grille de résultats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {loading ? (
-            <div className="text-center py-20 col-span-full flex flex-col items-center gap-4">
-                <Loader2 className="h-12 w-12 text-emerald-600 animate-spin" />
-                <p className="text-gray-500 text-lg">Chargement du catalogue...</p>
-            </div>
-          ) : filteredProperties.length > 0 ? (
-            filteredProperties.map(property => (
-              // 💡 On passe l'objet property complet (avec son id) au composant
-              <PropertyCard key={property.id} property={property} />
-            ))
-          ) : (
-            <div className="text-center py-20 col-span-full bg-white rounded-3xl border border-gray-100 shadow-sm">
-              <Building className="h-16 w-16 text-gray-200 mx-auto mb-4" />
-              <p className="text-gray-600 text-xl font-semibold">Aucun résultat trouvé.</p>
-              <p className="text-gray-500 mt-2">Essayez de modifier vos filtres ou votre recherche.</p>
-            </div>
-          )}
-        </div>
+        {/* 🏠 Grille avec AnimatePresence */}
+        <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <AnimatePresence mode='popLayout'>
+            {loading ? (
+              <motion.div key="loader" className="col-span-full py-40 flex flex-col items-center gap-6">
+                <Loader2 className="h-16 w-16 text-emerald-500 animate-spin" />
+                <p className="text-slate-400 text-xl font-medium animate-pulse">Chargement de Betna Immo...</p>
+              </motion.div>
+            ) : filteredProperties.length > 0 ? (
+              filteredProperties.map(property => (
+                <motion.div 
+                  key={property.id}
+                  layout 
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  whileHover={{ y: -10 }}
+                  className="h-full"
+                >
+                  <PropertyCard property={property} />
+                </motion.div>
+              ))
+            ) : (
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                className="col-span-full py-32 bg-white rounded-[3rem] border-2 border-dashed border-slate-200 text-center"
+              >
+                <FilterX className="h-20 w-20 text-slate-200 mx-auto mb-6" />
+                <p className="text-2xl font-black text-slate-400">Aucun bien ne correspond.</p>
+                <button 
+                  onClick={() => {setSearchTerm(''); setTypeSejour('tout'); setShowOnlyVerified(false);}}
+                  className="mt-4 text-emerald-600 font-bold hover:underline"
+                >
+                  Réinitialiser les filtres
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
     </div>
   );
