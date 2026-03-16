@@ -1,7 +1,7 @@
 {
-  "name": "betna-immo",
+  "name": "betna-immo-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,44 +10,20 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "@tailwindcss/vite": "^4.2.0",
-    "firebase": "^12.9.0",
-    "firebase-admin": "^11.11.1",
-    "firebase-functions": "^4.3.0",
-    "framer-motion": "^12.34.2",
-    "lucide-react": "^0.563.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-router-dom": "^7.13.0",
-    "stripe": "^20.3.1",
+    "axios": "^1.6.0",
+    "framer-motion": "^11.0.0",
+    "lucide-react": "^0.450.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0",
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
-    "@types/react": "^19.2.7",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.1",
-    "autoprefixer": "^10.4.24",
-    "eslint": "^9.39.1",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.4.24",
-    "globals": "^16.5.0",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.19",
-    "vite": "^7.3.1"
-  },
-  "description": "> **Betna Immo** est la plateforme de confiance pour trouver votre logement fiable au Tchad. Notre objectif est de simplifier la location et la vente de biens immobiliers en garantissant la véracité des annonces.",
-  "main": "eslint.config.js",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Sende45/betna-immo.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Sende45/betna-immo/issues"
-  },
-  "homepage": "https://github.com/Sende45/betna-immo#readme"
+    "@vitejs/plugin-react": "^4.2.0",
+    "autoprefixer": "^10.4.17",
+    "eslint": "^8.56.0",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "vite": "^5.1.0"
+  }
 }
