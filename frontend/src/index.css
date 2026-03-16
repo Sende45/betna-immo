@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===============================
+   FIX SCROLL PREMIUM (UX PRO)
+   Empêche le header de "flotter"
+   =============================== */
+
+.catalogue-sticky {
+  position: sticky;
+  top: 5rem; /* équivalent top-20 */
+
+  /* crée une layer GPU stable */
+  transform: translateZ(0);
+  will-change: transform;
+
+  /* bloque les repaint pendant scroll */
+  contain: layout style paint;
+
+  backface-visibility: hidden;
+  z-index: 40;
+}
+
+/* remplace backdrop-blur dynamique instable */
+.catalogue-glass {
+  background: rgba(255,255,255,0.78);
+
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+
+  /* fixe le blur une fois pour toutes */
+  transform: translateZ(0);
+}
+
+/* ombre stable (sinon elle tremble) */
+.catalogue-shadow {
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.04),
+    0 10px 30px rgba(15,23,42,0.08);
+}

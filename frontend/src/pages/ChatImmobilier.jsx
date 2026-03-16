@@ -1,0 +1,129 @@
+import { useState, useEffect, useRef } from "react";
+import { useAuth } from "../context/AuthContext";
+import { Send, Bot, Loader2 } from "lucide-react";
+import api from "../api/axios"; // ✅ Utilisation de ton instance Axios magique
+
+const ChatImmobilier = () => {
+  const { user } = useAuth();
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const scrollRef = useRef(null);
+
+  // --- EFFET : Scroll automatique vers le bas ---
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
+  // --- ACTION : Envoyer un message ---
+  const sendMessage = async () => {
+    if (!input.trim() || !user || loading) return;
+
+    const userMessage = input;
+    // Mise à jour optimiste de l'UI
+    setMessages((prev) => [...prev, { role: "user", text: userMessage }]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      // ✅ APPEL API : Vers ton serveur Node.js (via l'intercepteur Axios)
+      // Le token JWT est ajouté automatiquement grâce à api/axios.js
+      const res = await api.post("/ai/chat", { 
+        userId: user.id, // MongoDB utilise .id
+        message: userMessage 
+      });
+
+      const botReply = res.data.message || "Désolé, je n'ai pas pu générer de réponse.";
+      setMessages((prev) => [...prev, { role: "assistant", text: botReply }]);
+
+    } catch (err) {
+      console.error("Erreur Chat IA:", err);
+      setMessages((prev) => [
+        ...prev,
+        { 
+          role: "assistant", 
+          text: "Oups ! Je n'arrive pas à me connecter au serveur Betna. Réessaie dans un instant ? 🔌" 
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-100px)] max-w-4xl mx-auto bg-white shadow-xl rounded-2xl overflow-hidden mt-4">
+      {/* Header */}
+      <div className="bg-emerald-600 p-4 text-white flex items-center gap-3 shadow-md">
+        <Bot size={24} />
+        <div>
+          <h1 className="font-bold">Assistant Immobilier Betna</h1>
+          <p className="text-xs text-emerald-100">Expert Côte d'Ivoire 😎🏡</p>
+        </div>
+      </div>
+
+      {/* Zone de messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+        {messages.length === 0 && (
+          <div className="text-center text-gray-400 mt-10">
+            <Bot size={48} className="mx-auto mb-2 opacity-20" />
+            <p className="font-medium text-slate-500">
+              Bonjour {user?.fullName?.split(' ')[0]} ! <br /> 
+              Je suis l'expert Betna. Où souhaitez-vous habiter ?
+            </p>
+          </div>
+        )}
+
+        {messages.map((msg, idx) => (
+          <div
+            key={idx}
+            className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
+          >
+            <div
+              className={`p-3 rounded-2xl max-w-[85%] shadow-sm ${
+                msg.role === "user"
+                  ? "bg-emerald-600 text-white rounded-tr-none"
+                  : "bg-white border border-gray-200 text-gray-800 rounded-tl-none"
+              }`}
+            >
+              <p className="whitespace-pre-wrap text-sm">{msg.text}</p>
+            </div>
+          </div>
+        ))}
+
+        {loading && (
+          <div className="flex items-center gap-2 text-emerald-600 font-medium italic animate-pulse">
+            <Loader2 className="animate-spin" size={18} />
+            <span className="text-sm">L'IA analyse votre recherche...</span>
+          </div>
+        )}
+
+        <div ref={scrollRef} />
+      </div>
+
+      {/* Barre d'input */}
+      <div className="p-4 border-t bg-white flex gap-2">
+        <input
+          className="flex-1 border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          placeholder="Ex: Je cherche une villa à Cocody Riviera..."
+          disabled={loading}
+        />
+        <button
+          onClick={sendMessage}
+          disabled={loading || !input.trim()}
+          className={`p-3 rounded-xl transition-all shadow-lg ${
+            loading || !input.trim() 
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed" 
+              : "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95"
+          }`}
+        >
+          {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ChatImmobilier;
