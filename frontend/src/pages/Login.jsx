@@ -4,7 +4,7 @@ import {
   Building2, ArrowRight, UserPlus, Sparkles, CheckCircle2
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext'; // Vérifie bien que le chemin vers ton Context est correct
 import { motion, AnimatePresence } from 'framer-motion';
 
 function Login() {
@@ -33,14 +33,34 @@ function Login() {
           dateDebut: null,
           dateFin: null
         };
-        await register(email, password, role, fullName, phone, defaultSubscription);
-        navigate(role === 'proprietaire' ? '/dashboard-proprio' : '/dashboard-client');
+        
+        // On attend le retour du register
+        const user = await register(email, password, role, fullName, phone, defaultSubscription);
+        
+        // Redirection après inscription
+        if (role === 'proprietaire') {
+          navigate('/dashboard-proprio');
+        } else {
+          navigate('/dashboard-client');
+        }
       } else {
-        await login(email, password);
-        navigate('/');
+        // Connexion
+        const user = await login(email, password);
+        
+        // Redirection intelligente basée sur le rôle stocké en BDD
+        if (user?.role === 'proprietaire') {
+          navigate('/dashboard-proprio');
+        } else if (user?.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
       }
     } catch (error) {
-      alert(error.message);
+      console.error("Erreur Auth:", error);
+      // Affiche le message d'erreur du backend s'il existe, sinon un message générique
+      const errorMsg = error.response?.data?.message || error.message || "Une erreur est survenue";
+      alert(errorMsg);
     } finally {
       setIsLoading(false);
     }
