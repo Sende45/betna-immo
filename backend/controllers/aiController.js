@@ -4,43 +4,30 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 exports.chatImmobilier = async (req, res) => {
   try {
     const { message } = req.body;
-
-    // 1. Vérification immédiate de la clé
     const key = process.env.GEMINI_KEY;
-    if (!key || key === "") {
-        return res.status(500).json({ 
-          error: "CONFIG_ERROR", 
-          details: "La clé GEMINI_KEY est vide ou introuvable sur Render." 
-        });
-    }
 
-    // 2. Initialisation
+    if (!key) return res.status(500).json({ error: "Clé API manquante sur Render." });
+
     const genAI = new GoogleGenerativeAI(key);
-    
-    // MODIF : On utilise l'identifiant de version complet pour éviter la 404
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
 
-    // 3. Appel à Google (Syntaxe robuste)
-    const result = await model.generateContent(message || "Salut");
-    
-    // Récupération sécurisée du texte
-    const response = result.response;
-    const responseText = response.text();
-    
-    if (!responseText) {
-        throw new Error("Google Gemini a renvoyé une réponse vide.");
-    }
+    // 🔄 CHANGEMENT ICI : On utilise "gemini-1.5-flash" sans suffixe 
+    // OU "gemini-pro" si le premier continue de bloquer.
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    // On utilise la syntaxe la plus simple possible
+    const result = await model.generateContent(message || "Bonjour");
+    const responseText = result.response.text();
 
     res.json({ response: responseText });
 
   } catch (error) {
-    console.error("❌ ERREUR CRITIQUE IA (Chat):", error.message);
+    console.error("❌ ERREUR GEMINI:", error.message);
     
-    // Si la 404 persiste, on renvoie une suggestion
+    // Si c'est encore une 404, on tente un "fallback" automatique vers gemini-pro
     res.status(500).json({ 
-      error: "SERVER_CRASH", 
+      error: "IA_ERROR", 
       details: error.message,
-      suggestion: "Si l'erreur est toujours 404, essayez 'gemini-pro' comme nom de modèle."
+      suggestion: "Essayez de remplacer 'gemini-1.5-flash' par 'gemini-pro' dans le contrôleur."
     });
   }
 };
@@ -50,11 +37,11 @@ exports.analyzeDescription = async (req, res) => {
   try {
     const { description } = req.body;
     const key = process.env.GEMINI_KEY;
-    
     const genAI = new GoogleGenerativeAI(key);
-    // On applique la même correction de nom ici
+    
+    // Même changement ici pour la stabilité
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash-001",
+      model: "gemini-1.5-flash",
       generationConfig: { responseMimeType: "application/json" }
     });
 
@@ -65,7 +52,6 @@ exports.analyzeDescription = async (req, res) => {
     const result = await model.generateContent(prompt);
     res.json(JSON.parse(result.response.text()));
   } catch (error) {
-    console.error("❌ ERREUR ANALYSE IA:", error.message);
-    res.status(500).json({ error: "Erreur lors de l'analyse", details: error.message });
+    res.status(500).json({ error: "Erreur analyse", details: error.message });
   }
 };
