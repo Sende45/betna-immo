@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { Send, Bot, Loader2, Trash2, RefreshCcw } from "lucide-react"; 
-import api from "../api/axios";
+import api from "../api/axios"; // ✅ Utilisation de ton instance Axios avec intercepteur
 
 const ChatImmobilier = () => {
   const { user } = useAuth();
@@ -33,21 +33,25 @@ const ChatImmobilier = () => {
     setLoading(true);
 
     try {
-      // ✅ APPEL API : Vers ton serveur Node.js
-      // On envoie le message à la route /ai/chat du backend
+      // ✅ APPEL API : Vers ton serveur Node.js (via l'intercepteur Axios)
+      // La route attendue est /ai/chat sur ton backend Render
       const res = await api.post("/ai/chat", { 
-        userId: user.id || user._id,
+        userId: user.id || user._id, // Sécurité pour MongoDB
         message: userMessage 
       });
 
-      // On récupère la réponse (ton contrôleur renvoie { response: "..." })
+      // ✅ MODIF : Récupération de la réponse via 'response' (mapping backend)
       const botReply = res.data.response || "Désolé, je n'ai pas pu générer de réponse.";
       setMessages((prev) => [...prev, { role: "assistant", text: botReply }]);
 
     } catch (err) {
       console.error("Erreur Chat IA:", err);
-      // On affiche l'erreur envoyée par le serveur ou un message générique
-      const errorMsg = err.response?.data?.error || "Oups ! Connexion perdue avec Betna. Réessaie ? 🔌";
+      
+      // Extraction du message d'erreur détaillé (pour débugger le 404/500)
+      const errorMsg = err.response?.data?.details || 
+                       err.response?.data?.error || 
+                       "Oups ! Connexion perdue avec Betna. Réessaie ? 🔌";
+      
       setMessages((prev) => [
         ...prev,
         { role: "assistant", text: errorMsg },
@@ -64,16 +68,16 @@ const ChatImmobilier = () => {
         <div className="flex items-center gap-3">
           <Bot size={24} />
           <div>
-            <h1 className="font-bold">Assistant Immobilier Betna</h1>
-            <p className="text-xs text-emerald-100">Expert Côte d'Ivoire 😎🏡</p>
+            <h1 className="font-bold text-lg">Assistant Immobilier Betna</h1>
+            <p className="text-xs text-emerald-100 italic">Expert Côte d'Ivoire 😎🏡</p>
           </div>
         </div>
         
-        {/* ✅ Bouton Nettoyer l'historique */}
+        {/* ✅ Bouton Nettoyer l'historique - Visible uniquement s'il y a des messages */}
         {messages.length > 0 && (
           <button 
             onClick={clearHistory}
-            className="p-2 hover:bg-emerald-700 rounded-lg transition-colors flex items-center gap-2 text-xs font-medium"
+            className="p-2 hover:bg-emerald-700 rounded-lg transition-colors flex items-center gap-2 text-xs font-medium bg-emerald-500/20 shadow-inner"
             title="Effacer la conversation"
           >
             <Trash2 size={18} />
@@ -106,15 +110,16 @@ const ChatImmobilier = () => {
                   : "bg-white border border-gray-200 text-gray-800 rounded-tl-none"
               }`}
             >
-              <p className="whitespace-pre-wrap text-sm">{msg.text}</p>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</p>
             </div>
           </div>
         ))}
 
+        {/* ✅ Feedback visuel pendant le chargement */}
         {loading && (
           <div className="flex items-center gap-2 text-emerald-600 font-medium italic animate-pulse p-2">
             <RefreshCcw className="animate-spin" size={16} />
-            <span className="text-sm">Betna réfléchit...</span>
+            <span className="text-sm">Betna analyse votre recherche...</span>
           </div>
         )}
 
@@ -122,9 +127,9 @@ const ChatImmobilier = () => {
       </div>
 
       {/* Barre d'input */}
-      <div className="p-4 border-t bg-white flex gap-2">
+      <div className="p-4 border-t bg-white flex gap-2 items-center">
         <input
-          className="flex-1 border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm"
+          className="flex-1 border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm bg-gray-50"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
@@ -137,7 +142,7 @@ const ChatImmobilier = () => {
           className={`p-3 rounded-xl transition-all shadow-lg ${
             loading || !input.trim() 
               ? "bg-gray-200 text-gray-400 cursor-not-allowed" 
-              : "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95"
+              : "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 shadow-emerald-200"
           }`}
         >
           {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
