@@ -1,8 +1,15 @@
 import axios from 'axios';
 
+// On extrait l'URL et on la nettoie pour éviter les doubles slashes ou les erreurs de build
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+// 🔍 Ce log apparaîtra dans ta console navigateur (F12) pour confirmer l'URL en prod
+if (import.meta.env.PROD) {
+  console.log("🌐 Betna-Immo connecté au serveur :", API_URL);
+}
+
 const api = axios.create({
-  // ✅ Utilise la variable d'env Vercel en priorité, sinon localhost pour ton PC
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: API_URL,
 });
 
 // --- L'INTERCEPTEUR : La magie automatique ---
