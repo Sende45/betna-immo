@@ -16,11 +16,16 @@ const UserSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-// Hachage du mot de passe avant sauvegarde
-UserSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
+// ✅ CORRECTION : Hachage du mot de passe (Middleware Async)
+// Dans une fonction async, Mongoose n'a plus besoin du paramètre 'next'
+UserSchema.pre('save', async function() {
+  if (!this.isModified('password')) return;
+
+  try {
+    this.password = await bcrypt.hash(this.password, 12);
+  } catch (err) {
+    throw new Error('Erreur lors du hachage du mot de passe');
+  }
 });
 
 module.exports = mongoose.model('User', UserSchema);
