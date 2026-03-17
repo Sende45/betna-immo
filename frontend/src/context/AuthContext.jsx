@@ -1,13 +1,11 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import api from '../api/axios'; // ✅ On importe notre instance Axios configurée
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // URL de ton API (à mettre dans un .env plus tard)
-  const API_URL = "http://localhost:5000/api/auth";
 
   // --- EFFET : Vérification de la session au démarrage ---
   useEffect(() => {
@@ -26,17 +24,10 @@ export const AuthProvider = ({ children }) => {
   // --- ACTION : Connexion ---
   const login = async (email, password) => {
     try {
-      const response = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Erreur de connexion");
-      }
+      // ✅ On utilise 'api' au lieu de 'fetch'. Plus besoin de l'URL complète.
+      const response = await api.post('/auth/login', { email, password });
+      
+      const data = response.data;
 
       // Stockage local pour la persistence
       localStorage.setItem('betna_token', data.token);
@@ -45,31 +36,25 @@ export const AuthProvider = ({ children }) => {
       setUser(data.user);
       return data;
     } catch (error) {
-      throw error;
+      // Axios remonte les erreurs du backend dans error.response.data
+      throw error.response?.data?.message || error.message || "Erreur de connexion";
     }
   };
 
   // --- ACTION : Inscription ---
   const register = async (email, password, role, fullName, phone, subscription) => {
     try {
-      const response = await fetch(`${API_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email, 
-          password, 
-          role, 
-          fullName, 
-          phone,
-          subscription // Transmis directement à MongoDB
-        }),
+      // ✅ Utilisation de l'instance 'api'
+      const response = await api.post('/auth/register', { 
+        email, 
+        password, 
+        role, 
+        fullName, 
+        phone,
+        subscription 
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Erreur lors de l'inscription");
-      }
+      const data = response.data;
 
       // Stockage local
       localStorage.setItem('betna_token', data.token);
@@ -78,7 +63,7 @@ export const AuthProvider = ({ children }) => {
       setUser(data.user);
       return data;
     } catch (error) {
-      throw error;
+      throw error.response?.data?.message || error.message || "Erreur lors de l'inscription";
     }
   };
 
