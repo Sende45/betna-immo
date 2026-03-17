@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Send, Bot, Loader2, Trash2, RefreshCcw } from "lucide-react"; // Ajout de Trash2
+import { Send, Bot, Loader2, Trash2, RefreshCcw } from "lucide-react"; 
 import api from "../api/axios";
 
 const ChatImmobilier = () => {
@@ -10,6 +10,7 @@ const ChatImmobilier = () => {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef(null);
 
+  // --- EFFET : Scroll automatique vers le bas ---
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
@@ -21,27 +22,36 @@ const ChatImmobilier = () => {
     }
   };
 
+  // --- ACTION : Envoyer un message ---
   const sendMessage = async () => {
     if (!input.trim() || !user || loading) return;
 
     const userMessage = input;
+    // Mise à jour optimiste de l'UI
     setMessages((prev) => [...prev, { role: "user", text: userMessage }]);
     setInput("");
     setLoading(true);
 
     try {
+      // ✅ APPEL API : Vers ton serveur Node.js
+      // On envoie le message à la route /ai/chat du backend
       const res = await api.post("/ai/chat", { 
         userId: user.id || user._id,
         message: userMessage 
       });
 
+      // On récupère la réponse (ton contrôleur renvoie { response: "..." })
       const botReply = res.data.response || "Désolé, je n'ai pas pu générer de réponse.";
       setMessages((prev) => [...prev, { role: "assistant", text: botReply }]);
 
     } catch (err) {
       console.error("Erreur Chat IA:", err);
-      const errorMsg = err.response?.data?.error || "Oups ! Connexion perdue avec Betna. 🔌";
-      setMessages((prev) => [...prev, { role: "assistant", text: errorMsg }]);
+      // On affiche l'erreur envoyée par le serveur ou un message générique
+      const errorMsg = err.response?.data?.error || "Oups ! Connexion perdue avec Betna. Réessaie ? 🔌";
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: errorMsg },
+      ]);
     } finally {
       setLoading(false);
     }
