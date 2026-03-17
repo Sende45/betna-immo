@@ -5,14 +5,31 @@ const jwt = require('jsonwebtoken');
 // ✅ Inscription (Register)
 exports.register = async (req, res) => {
   try {
-    const { email, password, fullName, phone, role } = req.body;
+    // 1. On récupère TOUTES les données, y compris subscription envoyée par le frontend
+    const { email, password, fullName, phone, role, subscription } = req.body;
 
+    // 2. Vérification d'existence
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ message: "Cet email est déjà utilisé." });
 
-    // Le hachage du mot de passe est géré automatiquement par le middleware .pre('save') du modèle User
-    user = new User({ email, password, fullName, phone, role });
+    // 3. Création de l'utilisateur
+    // Le hachage est auto via le middleware .pre('save') du modèle
+    user = new User({ 
+      email, 
+      password, 
+      fullName, 
+      phone, 
+      role,
+      // On s'assure qu'un objet par défaut existe si subscription est absent
+      subscription: subscription || { plan: 'aucun', actif: false }
+    });
+    
     await user.save();
+
+    // 4. Vérification de sécurité du Secret JWT
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET est manquant dans les variables d'environnement Render.");
+    }
 
     const token = jwt.sign(
       { id: user._id, role: user.role }, 
@@ -24,8 +41,16 @@ exports.register = async (req, res) => {
       token, 
       user: { id: user._id, fullName: user.fullName, email: user.email, role: user.role } 
     });
+
   } catch (err) {
-    res.status(500).json({ message: "Erreur lors de l'inscription" });
+    // 🔥 MODIF DEBUG : Log complet pour Render
+    console.error("❌ ERREUR REGISTER BACKEND:", err);
+
+    // Renvoie l'erreur précise au Frontend pour qu'on puisse la lire dans F12
+    res.status(500).json({ 
+      message: "Erreur lors de l'inscription",
+      error: err.message 
+    });
   }
 };
 
@@ -40,6 +65,10 @@ exports.login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Identifiants invalides." });
 
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET est manquant sur le serveur.");
+    }
+
     const token = jwt.sign(
       { id: user._id, role: user.role }, 
       process.env.JWT_SECRET, 
@@ -51,17 +80,21 @@ exports.login = async (req, res) => {
       user: { id: user._id, fullName: user.fullName, email: user.email, role: user.role } 
     });
   } catch (err) {
-    res.status(500).json({ message: "Erreur lors de la connexion" });
+    console.error("❌ ERREUR LOGIN BACKEND:", err);
+    res.status(500).json({ 
+      message: "Erreur lors de la connexion",
+      error: err.message 
+    });
   }
 };
 
 // ✅ Profil actuel (Get Me)
 exports.getMe = async (req, res) => {
   try {
-    // req.user.id est injecté par le middleware 'auth'
     const user = await User.findById(req.user.id).select('-password');
+    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
     res.json(user);
   } catch (err) {
-    res.status(500).json({ message: "Erreur serveur" });
+    res.status(500).json({ message: "Erreur serveur", error: err.message });
   }
 };
