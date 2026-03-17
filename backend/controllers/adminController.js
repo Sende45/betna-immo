@@ -1,4 +1,4 @@
-const User = require('..User/models/User');
+const User = require('../models/User');
 const Bien = require('../models/Bien');
 
 // ✅ Récupérer tous les utilisateurs
