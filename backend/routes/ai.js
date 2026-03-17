@@ -1,9 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const aiController = require('../controllers/aiController');
+const aiController = require('../controllers/aiController'); // Vérifie bien le chemin !
 
-// Ces routes seront préfixées par /api/ai dans app.js
-router.post('/chat', aiController.chatImmobilier);      // URL: /api/ai/chat
-router.post('/analyze', aiController.analyzeDescription); // URL: /api/ai/analyze
+// Vérification de sécurité : si aiController.chatImmobilier est undefined, on le saura au build
+if (!aiController.chatImmobilier) {
+    console.error("ERREUR : chatImmobilier est undefined dans le contrôleur !");
+}
+
+router.post('/chat', aiController.chatImmobilier);
+router.post('/analyze', aiController.analyzeDescription);
 
 module.exports = router;
