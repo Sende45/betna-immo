@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import api from '../api/axios';
-import { Loader2, creditCard } from 'lucide-react';
+import { Loader2, CreditCard } from 'lucide-react'; // ✅ Corrigé : Majuscule sur CreditCard
 
 const SubscriptionButton = ({ priceId, className }) => {
   const [loading, setLoading] = useState(false);
@@ -19,7 +19,9 @@ const SubscriptionButton = ({ priceId, className }) => {
       }
     } catch (err) {
       console.error("Erreur Stripe:", err);
-      alert("Impossible d'initier le paiement. Vérifiez votre connexion.");
+      // ✅ Plus précis : affiche le message du backend si disponible
+      const errorMsg = err.response?.data?.message || "Impossible d'initier le paiement.";
+      alert(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -29,15 +31,18 @@ const SubscriptionButton = ({ priceId, className }) => {
     <button 
       onClick={handleSubscription} 
       disabled={loading}
-      className={className}
+      className={`flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70 ${className}`}
     >
       {loading ? (
         <>
           <Loader2 className="animate-spin" size={20} />
-          Traitement...
+          <span>Traitement...</span>
         </>
       ) : (
-        "Passer au Premium"
+        <>
+          <CreditCard size={20} /> {/* ✅ Icône maintenant utilisée */}
+          <span>Passer au Premium</span>
+        </>
       )}
     </button>
   );
