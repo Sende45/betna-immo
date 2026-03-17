@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Send, Bot, Loader2 } from "lucide-react";
-import api from "../api/axios"; // ✅ Utilisation de ton instance Axios magique
+import { Send, Bot, Loader2, Trash2, RefreshCcw } from "lucide-react"; // Ajout de Trash2
+import api from "../api/axios";
 
 const ChatImmobilier = () => {
   const { user } = useAuth();
@@ -10,41 +10,38 @@ const ChatImmobilier = () => {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef(null);
 
-  // --- EFFET : Scroll automatique vers le bas ---
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  // --- ACTION : Envoyer un message ---
+  // --- ACTION : Nettoyer l'historique ---
+  const clearHistory = () => {
+    if (window.confirm("Voulez-vous supprimer toute la conversation ?")) {
+      setMessages([]);
+    }
+  };
+
   const sendMessage = async () => {
     if (!input.trim() || !user || loading) return;
 
     const userMessage = input;
-    // Mise à jour optimiste de l'UI
     setMessages((prev) => [...prev, { role: "user", text: userMessage }]);
     setInput("");
     setLoading(true);
 
     try {
-      // ✅ APPEL API : Vers ton serveur Node.js (via l'intercepteur Axios)
-      // Le token JWT est ajouté automatiquement grâce à api/axios.js
       const res = await api.post("/ai/chat", { 
-        userId: user.id, // MongoDB utilise .id
+        userId: user.id || user._id,
         message: userMessage 
       });
 
-      const botReply = res.data.message || "Désolé, je n'ai pas pu générer de réponse.";
+      const botReply = res.data.response || "Désolé, je n'ai pas pu générer de réponse.";
       setMessages((prev) => [...prev, { role: "assistant", text: botReply }]);
 
     } catch (err) {
       console.error("Erreur Chat IA:", err);
-      setMessages((prev) => [
-        ...prev,
-        { 
-          role: "assistant", 
-          text: "Oups ! Je n'arrive pas à me connecter au serveur Betna. Réessaie dans un instant ? 🔌" 
-        },
-      ]);
+      const errorMsg = err.response?.data?.error || "Oups ! Connexion perdue avec Betna. 🔌";
+      setMessages((prev) => [...prev, { role: "assistant", text: errorMsg }]);
     } finally {
       setLoading(false);
     }
@@ -52,13 +49,27 @@ const ChatImmobilier = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-100px)] max-w-4xl mx-auto bg-white shadow-xl rounded-2xl overflow-hidden mt-4">
-      {/* Header */}
-      <div className="bg-emerald-600 p-4 text-white flex items-center gap-3 shadow-md">
-        <Bot size={24} />
-        <div>
-          <h1 className="font-bold">Assistant Immobilier Betna</h1>
-          <p className="text-xs text-emerald-100">Expert Côte d'Ivoire 😎🏡</p>
+      {/* Header avec bouton Nettoyer */}
+      <div className="bg-emerald-600 p-4 text-white flex items-center justify-between shadow-md">
+        <div className="flex items-center gap-3">
+          <Bot size={24} />
+          <div>
+            <h1 className="font-bold">Assistant Immobilier Betna</h1>
+            <p className="text-xs text-emerald-100">Expert Côte d'Ivoire 😎🏡</p>
+          </div>
         </div>
+        
+        {/* ✅ Bouton Nettoyer l'historique */}
+        {messages.length > 0 && (
+          <button 
+            onClick={clearHistory}
+            className="p-2 hover:bg-emerald-700 rounded-lg transition-colors flex items-center gap-2 text-xs font-medium"
+            title="Effacer la conversation"
+          >
+            <Trash2 size={18} />
+            <span className="hidden sm:inline">Effacer</span>
+          </button>
+        )}
       </div>
 
       {/* Zone de messages */}
@@ -91,9 +102,9 @@ const ChatImmobilier = () => {
         ))}
 
         {loading && (
-          <div className="flex items-center gap-2 text-emerald-600 font-medium italic animate-pulse">
-            <Loader2 className="animate-spin" size={18} />
-            <span className="text-sm">L'IA analyse votre recherche...</span>
+          <div className="flex items-center gap-2 text-emerald-600 font-medium italic animate-pulse p-2">
+            <RefreshCcw className="animate-spin" size={16} />
+            <span className="text-sm">Betna réfléchit...</span>
           </div>
         )}
 
@@ -107,7 +118,7 @@ const ChatImmobilier = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          placeholder="Ex: Je cherche une villa à Cocody Riviera..."
+          placeholder="Posez votre question à l'expert..."
           disabled={loading}
         />
         <button
