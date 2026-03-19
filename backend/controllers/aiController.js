@@ -16,11 +16,9 @@ exports.chatImmobilier = async (req, res) => {
     // 1. Initialisation de l'IA
     const genAI = new GoogleGenerativeAI(key);
 
-    // 🛠️ MODIF STRATÉGIQUE : On force 'v1' pour éviter le [404 Not Found] de v1beta
-    const model = genAI.getGenerativeModel(
-      { model: "gemini-1.5-flash" },
-      { apiVersion: "v1" } // <-- Cette ligne est la clé du problème
-    );
+    // 🛠️ MODIF FINALE : On retire apiVersion pour laisser le SDK 0.24.1 gérer l'auto-détection
+    // On utilise le modèle le plus stable : 'gemini-1.5-flash-latest'
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
     // 2. Appel à Google
     const result = await model.generateContent(message || "Salut");
@@ -34,10 +32,12 @@ exports.chatImmobilier = async (req, res) => {
 
   } catch (error) {
     console.error("❌ ERREUR CRITIQUE IA (Chat):", error.message);
+    
+    // Si ça renvoie encore 404, c'est l'IP de ton serveur Render qui est bannie par Google
     res.status(500).json({ 
       error: "IA_ERROR", 
       details: error.message,
-      note: "Le serveur a forcé l'API v1 pour corriger la 404."
+      note: "Essaye de changer la région de ton service Render pour 'Frankfurt (EU)' ou 'Oregon (US)'."
     });
   }
 };
@@ -50,11 +50,8 @@ exports.analyzeDescription = async (req, res) => {
     
     const genAI = new GoogleGenerativeAI(key);
     
-    // On applique la même correction v1 ici
-    const model = genAI.getGenerativeModel(
-      { model: "gemini-1.5-flash" },
-      { apiVersion: "v1" }
-    );
+    // On applique le même correctif 'latest' ici
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
     const prompt = `Tu es un expert immobilier. Analyse cette description et renvoie uniquement un JSON valide : 
     { "resume": "...", "points_forts": [], "type_bien": "..." } 
