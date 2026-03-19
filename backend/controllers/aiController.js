@@ -1,56 +1,61 @@
 const axios = require('axios');
 
+// ✅ LOGIQUE : Chat conversationnel (Version Gemini 3 Flash)
 exports.chatImmobilier = async (req, res) => {
   try {
     const { message } = req.body;
     const apiKey = process.env.GEMINI_KEY;
 
-    if (!apiKey) return res.status(500).json({ error: "Clé API absente sur Render." });
+    if (!apiKey) {
+      return res.status(500).json({ error: "Clé API manquante sur Render." });
+    }
 
-    // 🔄 ON CHANGE LE MODÈLE POUR 'gemini-1.5-pro' 
-    // car 'flash' semble être désactivé sur ton projet Google Cloud
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+    // 🚀 MISE À JOUR : On cible le modèle Gemini 3 Flash
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3-flash:generateContent?key=${apiKey}`;
 
     const response = await axios.post(url, {
       contents: [{
-        parts: [{ text: `Tu es l'assistant de Betna Immo. Réponds courtement : ${message}` }]
+        parts: [{ text: `Tu es l'assistant expert de Betna Immo en Côte d'Ivoire. Réponds de façon concise et pro : ${message}` }]
       }]
     }, {
       headers: { 'Content-Type': 'application/json' }
     });
 
+    // Extraction de la réponse
     if (response.data.candidates && response.data.candidates[0].content.parts[0].text) {
-      return res.json({ response: response.data.candidates[0].content.parts[0].text });
+      const botReply = response.data.candidates[0].content.parts[0].text;
+      return res.json({ response: botReply });
     } else {
-      throw new Error("Réponse Google vide");
+      throw new Error("Format de réponse Gemini 3 inattendu.");
     }
 
   } catch (error) {
-    console.error("❌ ERREUR FATALE GOOGLE:", error.response?.data || error.message);
+    console.error("❌ ERREUR GEMINI 3:", error.response?.data || error.message);
     
-    // Si ça renvoie encore 404, on affiche l'erreur complète de Google
+    // On renvoie l'erreur détaillée pour voir si c'est encore une 404
     res.status(500).json({ 
-      error: "COMPTE_GOOGLE_NON_ACTIVE", 
-      details: error.response?.data?.error?.message || error.message,
-      suggestion: "Connecte-toi sur https://aistudio.google.com/ et vérifie que tu peux chatter avec Gemini 1.5 Pro."
+      error: "GEMINI_3_ERROR", 
+      details: error.response?.data?.error?.message || error.message 
     });
   }
 };
 
-// Analyse d'annonce
+// ✅ LOGIQUE : Analyse d'annonce
 exports.analyzeDescription = async (req, res) => {
   try {
     const { description } = req.body;
     const apiKey = process.env.GEMINI_KEY;
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3-flash:generateContent?key=${apiKey}`;
 
     const response = await axios.post(url, {
       contents: [{
-        parts: [{ text: `Analyse et renvoie JSON : { "resume": "..." }. Texte : ${description}` }]
+        parts: [{ text: `Analyse cette annonce et renvoie uniquement un JSON valide : { "resume": "...", "points_forts": [], "type_bien": "..." }. Texte : ${description}` }]
       }]
     });
 
-    res.json(JSON.parse(response.data.candidates[0].content.parts[0].text));
+    const text = response.data.candidates[0].content.parts[0].text;
+    const cleanJson = text.replace(/```json|```/g, "").trim();
+    res.json(JSON.parse(cleanJson));
   } catch (error) {
     res.status(500).json({ error: "Erreur analyse", details: error.message });
   }
