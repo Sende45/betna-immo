@@ -2,22 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PropertyCard from "../components/PropertyCard";
 import { Search, ShieldCheck, MapPin, ArrowRight, Building, ArrowUpDown, Star, Users, Clock, Loader2 } from 'lucide-react';
-import api from '../api/axios'; // ✅ Migration vers Axios
+import api from '../api/axios'; 
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logementImage from "../assets/logement.png"; 
 
+// Variantes pour l'entrée élégante de la grille
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.1 }
+    transition: { staggerChildren: 0.05 }
   }
 };
 
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
-  visible: { y: 0, opacity: 1, transition: { duration: 0.5, ease: "easeOut" } }
+  visible: { y: 0, opacity: 1, transition: { duration: 0.4, ease: "easeOut" } }
 };
 
 function Home() {
@@ -33,7 +34,6 @@ function Home() {
     const fetchProperties = async () => {
       try {
         setLoading(true);
-        // ✅ Récupération depuis MongoDB via ton API Node
         const response = await api.get('/biens');
         const data = response.data.map(item => ({
           ...item,
@@ -51,7 +51,6 @@ function Home() {
 
   const handleCtaClick = () => {
     if (!user) return navigate('/login');
-    // Redirection selon le rôle pour plus de fluidité
     user.role === 'proprietaire' ? navigate('/dashboard') : navigate('/catalogue');
   };
 
@@ -67,7 +66,7 @@ function Home() {
   });
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
       
       {/* 🏙️ Hero Section */}
       <header className="relative bg-white pt-10 pb-24 lg:pt-20 lg:pb-32 overflow-hidden">
@@ -117,7 +116,7 @@ function Home() {
             </div>
           </motion.div>
 
-          {/* Image Hero */}
+          {/* Image Hero avec optimisation GPU */}
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -147,12 +146,12 @@ function Home() {
         </div>
       </header>
 
-      {/* 🚀 Barre de recherche */}
+      {/* 🚀 Barre de recherche - Utilisation de 'catalogue-glass' (Tailwind v4 Utility) */}
       <section className="container mx-auto px-4 -mt-12 relative z-30">
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-white/80 backdrop-blur-xl p-3 rounded-[2rem] shadow-2xl border border-white/50 flex flex-col lg:flex-row gap-3"
+          className="catalogue-glass p-3 rounded-[2rem] shadow-2xl border border-white/50 flex flex-col lg:flex-row gap-3"
         >
           <div className="relative flex-grow group">
             <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-emerald-500 transition-colors group-focus-within:text-emerald-600" />
@@ -199,14 +198,14 @@ function Home() {
         </div>
       </section>
 
-      {/* 🏠 Grid de Résultats */}
+      {/* 🏠 Grid de Résultats - Optimisé avec AnimatePresence popLayout */}
       <main id="listings" className="container mx-auto px-4 pb-32">
         <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-6 mb-16">
           <div>
             <h2 className="text-4xl md:text-5xl font-black text-slate-950 mb-4 flex items-center gap-4">
               Dernières opportunités <Building className="text-emerald-600" />
             </h2>
-            <p className="text-slate-500 text-lg">Sélection exclusive de biens disponibles immédiatement.</p>
+            <p className="text-slate-500 text-lg">Sélection exclusive de biens disponibles immédiatement à Abidjan.</p>
           </div>
           
           <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 flex items-center gap-3 shadow-sm">
@@ -226,7 +225,7 @@ function Home() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="animate-spin text-emerald-500 mb-4" size={48} />
-            <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Chargement du catalogue...</p>
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Mise à jour du catalogue...</p>
           </div>
         ) : (
           <motion.div 
@@ -236,9 +235,18 @@ function Home() {
             viewport={{ once: true }}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
           >
-            <AnimatePresence>
+            {/* popLayout permet aux cartes de glisser fluidement lors du filtrage/tri */}
+            <AnimatePresence mode="popLayout">
               {filteredProperties.map(property => (
-                <motion.div key={property.id} variants={itemVariants} layout>
+                <motion.div 
+                  key={property.id} 
+                  variants={itemVariants} 
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.3 }}
+                >
                   <PropertyCard property={property} />
                 </motion.div>
               ))}
@@ -247,9 +255,9 @@ function Home() {
         )}
 
         {!loading && filteredProperties.length === 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-32 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-32 bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
             <Building className="h-20 w-20 text-slate-200 mx-auto mb-6" />
-            <p className="text-2xl font-bold text-slate-400">Aucun bien trouvé pour le moment</p>
+            <p className="text-2xl font-bold text-slate-400">Aucun logement ne correspond à votre recherche</p>
           </motion.div>
         )}
       </main>
@@ -257,7 +265,7 @@ function Home() {
       {/* 📞 Footer CTA */}
       <section className="px-4 pb-12">
         <motion.div 
-          whileHover={{ scale: 1.01 }}
+          whileHover={{ scale: 1.005 }}
           className="container mx-auto bg-slate-950 rounded-[3rem] p-12 lg:p-24 relative overflow-hidden text-center"
         >
           <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 blur-[100px] rounded-full"></div>
@@ -265,13 +273,13 @@ function Home() {
           
           <h3 className="text-4xl md:text-6xl font-black text-white mb-8 relative">Vous êtes propriétaire ?</h3>
           <p className="text-slate-400 text-xl max-w-2xl mx-auto mb-12 relative leading-relaxed">
-            Rejoignez les centaines de propriétaires qui font confiance à Betna pour trouver des locataires sérieux à Abidjan.
+            Rejoignez la révolution immobilière à Abidjan. Listez vos biens et trouvez des locataires fiables en un clic.
           </p>
           <motion.button 
             whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(16, 185, 129, 0.2)" }}
             whileTap={{ scale: 0.95 }}
             onClick={handleCtaClick}
-            className="relative bg-emerald-500 text-white px-12 py-5 rounded-[2rem] font-black text-xl flex items-center gap-3 mx-auto shadow-2xl"
+            className="relative bg-emerald-500 text-white px-12 py-5 rounded-[2rem] font-black text-xl flex items-center gap-3 mx-auto shadow-2xl transition-all"
           >
             Inscrire mon bien <ArrowRight />
           </motion.button>

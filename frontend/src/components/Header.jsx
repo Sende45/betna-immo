@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Menu, X, Home, Building, LogIn, UserCircle, LogOut, 
-  LayoutDashboard, PlusCircle, User, LayoutGrid, CreditCard, MessageSquare 
+  LayoutGrid, CreditCard, MessageSquare, ChevronRight
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,11 +14,8 @@ function Header() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Effet de scroll pour changer l'apparence du header
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -25,130 +23,130 @@ function Header() {
   const handleDashboardRedirect = () => {
     setIsOpen(false);
     if (!user) navigate('/login');
-    else if (user.role === 'admin') navigate('/admin');
-    else if (user.role === 'proprietaire') navigate('/dashboard-proprio');
-    else navigate('/dashboard-client');
+    else navigate('/dashboard'); // Ton composant Dashboard gère déjà les rôles en interne
   };
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 ${
       scrolled 
-        ? "bg-white/80 backdrop-blur-md shadow-lg py-2" 
-        : "bg-white py-4"
-    } border-b border-gray-100`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        ? "bg-white/80 backdrop-blur-xl shadow-2xl shadow-slate-200/50 py-3" 
+        : "bg-white py-5"
+    } border-b border-slate-50`}>
+      <div className="max-w-7xl mx-auto px-6 md:px-8">
         <div className="flex justify-between h-12 items-center">
           
-          {/* Logo avec animation au survol */}
-          <Link to="/" className="group flex-shrink-0 flex items-center gap-2">
-            <div className="bg-emerald-600 p-1.5 rounded-lg group-hover:rotate-12 transition-transform duration-300">
+          {/* Logo Premium */}
+          <Link to="/" className="group flex items-center gap-3">
+            <div className="bg-slate-950 p-2 rounded-xl group-hover:bg-emerald-600 group-hover:rotate-12 transition-all duration-500 shadow-lg shadow-slate-200">
                 <Building className="h-6 w-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-gray-900 tracking-tight">
-              Betna<span className='text-emerald-600 group-hover:text-emerald-500 transition-colors'>Immo</span>
+            <span className="text-2xl font-black text-slate-950 tracking-tighter">
+              BETNA<span className='text-emerald-600'>.IMMO</span>
             </span>
           </Link>
           
-          {/* Menu Desktop */}
-          <div className="hidden md:flex items-center space-x-1">
+          {/* Menu Desktop (v4 optimized) */}
+          <div className="hidden lg:flex items-center space-x-1 bg-slate-50/50 p-1 rounded-full border border-slate-100">
             <NavLink to="/" icon={Home} label="Accueil" active={location.pathname === "/"} />
             <NavLink to="/catalogue" icon={LayoutGrid} label="Catalogue" active={location.pathname === "/catalogue"} />
-            <NavLink to="/chat" icon={MessageSquare} label="Assistant IA" active={location.pathname === "/chat"} />
+            <NavLink to="/chat" icon={MessageSquare} label="Assistant" active={location.pathname === "/chat"} />
             <NavLink to="/abonnement" icon={CreditCard} label="Abonnement" active={location.pathname === "/abonnement"} />
-            
-            <div className="h-6 w-[1px] bg-gray-200 mx-2" /> {/* Séparateur */}
+          </div>
 
+          <div className="hidden lg:flex items-center gap-4">
             {user ? (
-                <div className="flex items-center gap-2 ml-2">
+                <div className="flex items-center gap-3">
                     <button 
                       onClick={handleDashboardRedirect} 
-                      className="flex items-center gap-2 px-3 py-2 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all duration-300 border border-emerald-100"
+                      className="flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-white text-slate-900 hover:bg-slate-50 transition-all duration-300 border border-slate-100 shadow-sm group"
                     >
-                        <UserCircle size={18} />
-                        <span className="text-sm font-semibold max-w-[100px] truncate">
-                            {user.name || "Mon Compte"}
+                        <UserCircle size={18} className="text-emerald-600" />
+                        <span className="text-xs font-black uppercase tracking-widest">
+                            {user.fullName?.split(' ')[0] || "Compte"}
                         </span>
                     </button>
                     <button 
                       onClick={logout} 
-                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all duration-300"
+                      className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all duration-300"
                       title="Déconnexion"
                     >
-                        <LogOut size={18} />
+                        <LogOut size={20} />
                     </button>
                 </div>
             ) : (
-                <Link to="/login" className="relative inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-2.5 rounded-full text-sm font-bold overflow-hidden group transition-all duration-300 hover:bg-emerald-600 hover:shadow-lg active:scale-95">
-                  <LogIn className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  <span>Connexion</span>
+                <Link to="/login" className="bg-slate-950 text-white px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-[0.2em] hover:bg-emerald-600 hover:shadow-xl hover:shadow-emerald-200 transition-all duration-300 active:scale-95 flex items-center gap-2">
+                  <LogIn className="h-4 w-4" />
+                  Connexion
                 </Link>
             )}
           </div>
 
           {/* Hamburger Mobile */}
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <button 
               onClick={() => setIsOpen(!isOpen)} 
-              className={`p-2 rounded-lg transition-colors ${isOpen ? "bg-emerald-50 text-emerald-600" : "text-gray-600"}`}
+              className={`p-3 rounded-2xl transition-all ${isOpen ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-600"}`}
             >
-              {isOpen ? <X size={28} /> : <Menu size={28} />}
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Menu Mobile avec animation slide down */}
-      <div className={`md:hidden absolute w-full bg-white border-b shadow-xl transition-all duration-300 ease-in-out ${
-        isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0 overflow-hidden"
-      }`}>
-        <div className="px-4 pt-2 pb-6 space-y-2">
-          <MobileNavLink to="/" icon={Home} label="Accueil" onClick={() => setIsOpen(false)} />
-          <MobileNavLink to="/catalogue" icon={LayoutGrid} label="Catalogue" onClick={() => setIsOpen(false)} />
-          <MobileNavLink to="/chat" icon={MessageSquare} label="Assistant IA" onClick={() => setIsOpen(false)} />
-          <MobileNavLink to="/abonnement" icon={CreditCard} label="Abonnement" onClick={() => setIsOpen(false)} />
-          
-          <div className="pt-4 border-t border-gray-100">
-            {user ? (
-                <div className="space-y-2">
-                    <button onClick={handleDashboardRedirect} className="flex w-full items-center justify-between p-3 rounded-xl bg-gray-50 text-gray-900 font-semibold">
-                        <div className="flex items-center gap-3">
-                            <UserCircle className="text-emerald-600" />
-                            Mon Profil
-                        </div>
-                        <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md uppercase tracking-wider">{user.role}</span>
-                    </button>
-                    <button onClick={logout} className="flex w-full items-center gap-3 p-3 rounded-xl text-red-600 hover:bg-red-50 font-semibold transition-colors">
-                        <LogOut size={20} />
-                        Déconnexion
-                    </button>
-                </div>
-            ) : (
-                <Link to="/login" onClick={() => setIsOpen(false)} className="flex items-center justify-center gap-2 bg-emerald-600 text-white p-4 rounded-xl font-bold shadow-md">
-                  <LogIn size={20} />
-                  Se connecter
-                </Link>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Menu Mobile (Framer Motion) */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="lg:hidden absolute w-full bg-white border-b border-slate-100 shadow-2xl p-6 space-y-3"
+          >
+            <MobileNavLink to="/" icon={Home} label="Accueil" onClick={() => setIsOpen(false)} />
+            <MobileNavLink to="/catalogue" icon={LayoutGrid} label="Catalogue" onClick={() => setIsOpen(false)} />
+            <MobileNavLink to="/chat" icon={MessageSquare} label="Assistant IA" onClick={() => setIsOpen(false)} />
+            <MobileNavLink to="/abonnement" icon={CreditCard} label="Tarifs" onClick={() => setIsOpen(false)} />
+            
+            <div className="pt-6 mt-6 border-t border-slate-50">
+              {user ? (
+                  <div className="space-y-3">
+                      <button onClick={handleDashboardRedirect} className="flex w-full items-center justify-between p-5 rounded-[1.5rem] bg-slate-50 text-slate-900 group">
+                          <div className="flex items-center gap-4">
+                              <UserCircle className="text-emerald-600" size={24} />
+                              <span className="font-black text-sm uppercase tracking-widest">Tableau de Bord</span>
+                          </div>
+                          <ChevronRight size={18} className="text-slate-300 group-hover:translate-x-1 transition-transform" />
+                      </button>
+                      <button onClick={logout} className="flex w-full items-center gap-4 p-5 rounded-[1.5rem] text-rose-500 hover:bg-rose-50 font-black text-sm uppercase tracking-widest transition-all">
+                          <LogOut size={22} />
+                          Déconnexion
+                      </button>
+                  </div>
+              ) : (
+                  <Link to="/login" onClick={() => setIsOpen(false)} className="flex items-center justify-center gap-3 bg-slate-950 text-white p-5 rounded-[1.5rem] font-black uppercase tracking-widest text-sm shadow-xl">
+                    <LogIn size={20} />
+                    Accès Membre
+                  </Link>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }
 
-// Composant NavLink Desktop avec effet de barre de soulignement animée
 const NavLink = ({ icon: Icon, label, to, active }) => (
   <Link 
     to={to} 
-    className={`relative group flex items-center gap-1.5 px-4 py-2 text-sm font-bold transition-all duration-300 ${
-      active ? "text-emerald-600" : "text-gray-600 hover:text-emerald-600"
+    className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${
+      active 
+        ? "bg-white text-emerald-600 shadow-sm" 
+        : "text-slate-400 hover:text-slate-900 hover:bg-white/50"
     }`}
   >
-    <Icon className={`h-4.5 w-4.5 transition-transform duration-300 group-hover:-translate-y-0.5 ${active ? "animate-pulse" : ""}`} />
+    <Icon size={16} className={active ? "animate-pulse" : ""} />
     <span>{label}</span>
-    {/* Barre de soulignement */}
-    <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 bg-emerald-600 transition-all duration-300 ${
-      active ? "w-2/3" : "w-0 group-hover:w-1/2"
-    }`} />
   </Link>
 );
 
@@ -156,12 +154,12 @@ const MobileNavLink = ({ icon: Icon, label, to, onClick }) => (
   <Link 
     to={to} 
     onClick={onClick} 
-    className="flex items-center gap-4 text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 p-3 rounded-xl transition-all duration-200"
+    className="flex items-center gap-5 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 p-5 rounded-[1.5rem] transition-all group"
   >
-    <div className="bg-gray-100 p-2 rounded-lg group-hover:bg-white transition-colors">
-        <Icon size={20} />
+    <div className="bg-slate-50 p-3 rounded-2xl group-hover:bg-white transition-colors">
+        <Icon size={22} />
     </div>
-    <span className="font-semibold text-lg">{label}</span>
+    <span className="font-black uppercase tracking-widest text-sm">{label}</span>
   </Link>
 );
 
