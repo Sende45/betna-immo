@@ -1,71 +1,64 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const axios = require('axios'); // On utilise axios (déjà dans tes dépendances)
 
-// ✅ LOGIQUE : Chat conversationnel
+// ✅ LOGIQUE : Chat conversationnel (Version REST)
 exports.chatImmobilier = async (req, res) => {
   try {
     const { message } = req.body;
-    const key = process.env.GEMINI_KEY;
+    const apiKey = process.env.GEMINI_KEY;
 
-    if (!key || key === "") {
-      return res.status(500).json({ 
-        error: "CONFIG_ERROR", 
-        details: "La clé GEMINI_KEY est vide ou introuvable sur Render." 
-      });
+    if (!apiKey) {
+      return res.status(500).json({ error: "Clé API manquante sur Render." });
     }
 
-    // 1. Initialisation
-    const genAI = new GoogleGenerativeAI(key);
+    // URL officielle stable (v1) - Impossible d'avoir une 404 de version ici
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-    // 🛠️ MODIF ULTIME : On force le modèle ET l'API Version 1 (Stable)
-    // On retire le "-latest" qui semble poser problème sur v1beta
-    const model = genAI.getGenerativeModel(
-      { model: "gemini-1.5-flash" },
-      { apiVersion: 'v1' } 
-    );
+    const response = await axios.post(url, {
+      contents: [{
+        parts: [{ text: `Tu es l'assistant IA de Betna Immo, expert immobilier en Côte d'Ivoire. Réponds de manière pro : ${message}` }]
+      }]
+    }, {
+      headers: { 'Content-Type': 'application/json' }
+    });
 
-    // 2. Appel à Google
-    const result = await model.generateContent(message || "Salut");
-    
-    if (!result || !result.response) {
-      throw new Error("Google Gemini a renvoyé une réponse vide.");
+    // Extraction sécurisée de la réponse Google
+    if (response.data.candidates && response.data.candidates[0].content.parts[0].text) {
+      const botReply = response.data.candidates[0].content.parts[0].text;
+      return res.json({ response: botReply });
+    } else {
+      throw new Error("Format de réponse Google inattendu.");
     }
-
-    const responseText = result.response.text();
-    res.json({ response: responseText });
 
   } catch (error) {
-    console.error("❌ ERREUR CRITIQUE IA (Chat):", error.message);
+    console.error("❌ ERREUR API REST GOOGLE:", error.response?.data || error.message);
+    
+    // On renvoie l'erreur réelle pour débugger
     res.status(500).json({ 
-      error: "IA_ERROR", 
-      details: error.message,
-      note: "Le serveur a forcé l'API v1. Si l'erreur persiste, vérifiez la région de votre serveur Render."
+      error: "API_REST_ERROR", 
+      details: error.response?.data?.error?.message || error.message 
     });
   }
 };
 
-// ✅ LOGIQUE : Analyse d'annonce
+// ✅ LOGIQUE : Analyse d'annonce (Version REST)
 exports.analyzeDescription = async (req, res) => {
   try {
     const { description } = req.body;
-    const key = process.env.GEMINI_KEY;
-    const genAI = new GoogleGenerativeAI(key);
-    
-    const model = genAI.getGenerativeModel(
-      { model: "gemini-1.5-flash" },
-      { apiVersion: 'v1' }
-    );
+    const apiKey = process.env.GEMINI_KEY;
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-    const prompt = `Tu es un expert immobilier. Analyse cette description et renvoie uniquement un JSON valide : 
-    { "resume": "...", "points_forts": [], "type_bien": "..." } 
-    Texte : ${description}`;
+    const response = await axios.post(url, {
+      contents: [{
+        parts: [{ text: `Analyse cette annonce et renvoie uniquement un JSON : { "resume": "...", "points_forts": [], "type_bien": "..." }. Texte : ${description}` }]
+      }]
+    });
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const text = response.data.candidates[0].content.parts[0].text;
+    // Nettoyage au cas où l'IA met des balises ```json
     const cleanJson = text.replace(/```json|```/g, "").trim();
-    
     res.json(JSON.parse(cleanJson));
+
   } catch (error) {
-    console.error("❌ ERREUR ANALYSE IA:", error.message);
-    res.status(500).json({ error: "Erreur lors de l'analyse", details: error.message });
+    res.status(500).json({ error: "Erreur analyse", details: error.message });
   }
 };
