@@ -13,12 +13,15 @@ exports.chatImmobilier = async (req, res) => {
       });
     }
 
-    // 1. Initialisation de l'IA
+    // 1. Initialisation
     const genAI = new GoogleGenerativeAI(key);
 
-    // 🛠️ MODIF FINALE : On retire apiVersion pour laisser le SDK 0.24.1 gérer l'auto-détection
-    // On utilise le modèle le plus stable : 'gemini-1.5-flash-latest'
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    // 🛠️ MODIF ULTIME : On force le modèle ET l'API Version 1 (Stable)
+    // On retire le "-latest" qui semble poser problème sur v1beta
+    const model = genAI.getGenerativeModel(
+      { model: "gemini-1.5-flash" },
+      { apiVersion: 'v1' } 
+    );
 
     // 2. Appel à Google
     const result = await model.generateContent(message || "Salut");
@@ -32,12 +35,10 @@ exports.chatImmobilier = async (req, res) => {
 
   } catch (error) {
     console.error("❌ ERREUR CRITIQUE IA (Chat):", error.message);
-    
-    // Si ça renvoie encore 404, c'est l'IP de ton serveur Render qui est bannie par Google
     res.status(500).json({ 
       error: "IA_ERROR", 
       details: error.message,
-      note: "Essaye de changer la région de ton service Render pour 'Frankfurt (EU)' ou 'Oregon (US)'."
+      note: "Le serveur a forcé l'API v1. Si l'erreur persiste, vérifiez la région de votre serveur Render."
     });
   }
 };
@@ -47,19 +48,18 @@ exports.analyzeDescription = async (req, res) => {
   try {
     const { description } = req.body;
     const key = process.env.GEMINI_KEY;
-    
     const genAI = new GoogleGenerativeAI(key);
     
-    // On applique le même correctif 'latest' ici
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    const model = genAI.getGenerativeModel(
+      { model: "gemini-1.5-flash" },
+      { apiVersion: 'v1' }
+    );
 
     const prompt = `Tu es un expert immobilier. Analyse cette description et renvoie uniquement un JSON valide : 
     { "resume": "...", "points_forts": [], "type_bien": "..." } 
     Texte : ${description}`;
 
     const result = await model.generateContent(prompt);
-    
-    // Nettoyage sécurisé du JSON
     const text = result.response.text();
     const cleanJson = text.replace(/```json|```/g, "").trim();
     
