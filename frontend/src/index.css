@@ -4,26 +4,28 @@
   --color-brand-primary: #1e293b;
 }
 
-/* On utilise @utility pour une intégration parfaite au moteur Oxide */
-@utility catalogue-sticky {
-  position: sticky;
-  top: 5rem;
-  transform: translateZ(0);
-  will-change: transform;
-  contain: layout style paint;
-  backface-visibility: hidden;
-  z-index: 40;
-}
+/* On utilise @layer pour stabiliser le build sous Windows */
+@layer utilities {
+  .catalogue-sticky {
+    position: sticky;
+    top: 5rem;
+    transform: translateZ(0);
+    will-change: transform;
+    contain: layout style paint;
+    backface-visibility: hidden;
+    z-index: 40;
+  }
 
-@utility catalogue-glass {
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
-  transform: translateZ(0);
-}
+  .catalogue-glass {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    transform: translateZ(0);
+  }
 
-@utility catalogue-shadow {
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 10px 30px rgba(15, 23, 42, 0.08);
+  .catalogue-shadow {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      0 10px 30px rgba(15, 23, 42, 0.08);
+  }
 }
