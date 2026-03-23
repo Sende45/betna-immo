@@ -52,10 +52,14 @@ function DashboardPropriétaire() {
           body: formDataUpload,
         });
         const data = await response.json();
-        if (data.success) newUrls.push(data.data.url);
+        if (data.success) {
+          // MODIF : On récupère l'URL directe pour l'affichage immédiat
+          newUrls.push(data.data.url);
+        }
       } catch (error) { console.error(error); }
     }
-    setImageUrls([...imageUrls, ...newUrls]);
+    // MODIF : Mise à jour de l'état pour que les images apparaissent instantanément dans le formulaire
+    setImageUrls(prev => [...prev, ...newUrls]);
     setUploading(false);
   };
 
@@ -240,32 +244,36 @@ function DashboardPropriétaire() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-[2rem] cursor-pointer border-slate-200 bg-slate-50 hover:bg-emerald-50/50 hover:border-emerald-300 transition-all duration-300">
-                      <div className="flex flex-col items-center justify-center text-center px-4">
-                          {uploading ? <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" /> : <UploadCloud className="w-8 h-8 text-slate-300 mb-2" />}
-                          <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">Galerie Photos</p>
-                      </div>
-                      <input type="file" className="hidden" onChange={e => handleImageUpload(e.target.files)} accept="image/*" multiple />
-                  </label>
-                </div>
+                {/* MODIF : Zone d'Upload avec prévisualisation immédiate */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-[2rem] cursor-pointer border-slate-200 bg-slate-50 hover:bg-emerald-50/50 hover:border-emerald-300 transition-all duration-300">
+                        <div className="flex flex-col items-center justify-center text-center px-4">
+                            {uploading ? <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" /> : <UploadCloud className="w-8 h-8 text-slate-300 mb-2" />}
+                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">Ajouter des photos</p>
+                        </div>
+                        <input type="file" className="hidden" onChange={e => handleImageUpload(e.target.files)} accept="image/*" multiple />
+                    </label>
+                  </div>
 
-                <div className="grid grid-cols-4 gap-2">
-                  <AnimatePresence>
-                    {imageUrls.map((url, index) => (
-                        <motion.div 
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.5 }}
-                          key={index} className="relative group aspect-square"
-                        >
-                            <img src={url} alt="Pre-upload" className="h-full w-full object-cover rounded-xl border border-white shadow-sm" />
-                            <button type="button" onClick={() => removeImage(index)} className="absolute -top-1 -right-1 bg-rose-500 text-white rounded-full p-1.5 shadow-lg opacity-0 group-hover:opacity-100 transition-all">
-                                <X size={10} />
-                            </button>
-                        </motion.div>
-                    ))}
-                  </AnimatePresence>
+                  {/* MODIF : Affichage des miniatures des images uploadées */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <AnimatePresence>
+                      {imageUrls.map((url, index) => (
+                          <motion.div 
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.5 }}
+                            key={index} className="relative group aspect-square"
+                          >
+                              <img src={url} alt="Pre-upload" className="h-full w-full object-cover rounded-xl border border-white shadow-sm" />
+                              <button type="button" onClick={() => removeImage(index)} className="absolute -top-1 -right-1 bg-rose-500 text-white rounded-full p-1.5 shadow-lg opacity-0 group-hover:opacity-100 transition-all">
+                                  <X size={10} />
+                              </button>
+                          </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
                 </div>
 
                 <motion.button 
@@ -283,7 +291,7 @@ function DashboardPropriétaire() {
           {/* Liste des annonces (Scroll Area) */}
           <div className="lg:col-span-8">
             <h2 className="text-2xl font-black text-slate-950 mb-8 flex items-center gap-3">
-              <Building2 className="text-emerald-500 w-7 h-7" /> Votre Parc Immobilier
+              < Building2 className="text-emerald-500 w-7 h-7" /> Votre Parc Immobilier
             </h2>
             
             <div className="grid grid-cols-1 gap-6">
@@ -333,7 +341,7 @@ function DashboardPropriétaire() {
                           <span className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl"><Bath size={14} className="text-slate-300"/> {property.bathrooms || 0} Sdb</span>
                         </div>
                         <div className="flex gap-2">
-                            {/* NOUVEAU BOUTON APERÇU */}
+                            {/* BOUTON APERÇU CATALOGUE */}
                             <Link 
                                 to={`/catalogue?id=${property._id || property.id}`} 
                                 className="p-4 rounded-2xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-2 font-black text-[10px] uppercase tracking-widest shadow-sm"
