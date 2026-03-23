@@ -15,15 +15,16 @@ function PropertyCard({ property }) {
 
   return (
     <motion.div 
+      id={`property-${property.id || property._id}`} // <-- AJOUTÉ : Indispensable pour le scroll automatique
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       whileHover={{ y: -8 }}
       transition={{ duration: 0.4 }}
-      className="bg-white rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 border border-slate-100 overflow-hidden group transition-all duration-500"
+      className="bg-white rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 border border-slate-100 overflow-hidden group transition-all duration-500 h-full flex flex-col"
     >
       {/* Media Section */}
-      <div className="relative h-72 overflow-hidden">
+      <div className="relative h-72 overflow-hidden flex-shrink-0">
         <img 
           src={mainImage || fallbackImage} 
           alt={property.title} 
@@ -67,7 +68,7 @@ function PropertyCard({ property }) {
       </div>
 
       {/* Content Section */}
-      <div className="p-8">
+      <div className="p-8 flex flex-col flex-grow">
         <div className="mb-4">
           <h2 className="text-xl font-black text-slate-950 leading-tight group-hover:text-emerald-600 transition-colors line-clamp-1 tracking-tight" title={property.title}>
             {property.title}
@@ -94,14 +95,16 @@ function PropertyCard({ property }) {
           </div>
         </div>
         
-        {/* Actions Button */}
-        <Link 
-          to={`/property/${property.id}`}
-          className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-slate-950 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-[1.8rem] hover:bg-emerald-600 hover:shadow-xl hover:shadow-emerald-200 transition-all duration-500 active:scale-95"
-        >
-          <Eye className="w-4 h-4" />
-          Détails du bien
-        </Link>
+        {/* Actions Button - Poussé vers le bas */}
+        <div className="mt-auto">
+          <Link 
+            to={`/property/${property.id || property._id}`}
+            className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-slate-950 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-[1.8rem] hover:bg-emerald-600 hover:shadow-xl hover:shadow-emerald-200 transition-all duration-500 active:scale-95"
+          >
+            <Eye className="w-4 h-4" />
+            Détails du bien
+          </Link>
+        </div>
       </div>
     </motion.div>
   );

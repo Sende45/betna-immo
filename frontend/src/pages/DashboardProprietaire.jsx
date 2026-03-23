@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   PlusCircle, Building2, CheckCircle2, Clock3, Trash2, 
-  UploadCloud, Loader2, Edit3, X, 
-  MapPin, DollarSign, BedDouble, Bath, Sparkles, LayoutGrid
+  UploadCloud, Loader2, Edit3, X, ArrowLeft, ExternalLink, // ExternalLink ajouté
+  MapPin, DollarSign, BedDouble, Bath, Sparkles, LayoutGrid, Eye, TrendingUp
 } from 'lucide-react';
+import { Link } from 'react-router-dom'; 
 import { useAuth } from '../context/AuthContext'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios'; 
@@ -122,32 +123,49 @@ function DashboardPropriétaire() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 pt-24 md:pt-32 text-slate-900">
+    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 pt-24 md:pt-28 text-slate-900 selection:bg-emerald-100">
       <div className="max-w-7xl mx-auto">
         
-        {/* Header Section Premium */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/40"
-        >
-          <div className="flex items-center gap-6">
-              <div className='bg-slate-950 p-4 rounded-[1.5rem] shadow-lg shadow-slate-300'>
-                <LayoutGrid className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-black text-slate-950 tracking-tighter">Mes Annonces</h1>
-                <p className='text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-1'>
-                   Gérez vos <span className="text-emerald-600">{properties.length} propriétés</span> actives
-                </p>
-              </div>
+        {/* Navigation & Title Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+          <div className="space-y-4">
+            <Link to="/" className="group flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors font-bold text-xs uppercase tracking-[0.2em]">
+              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+              Retour à l'accueil
+            </Link>
+            <div>
+              <h1 className="text-5xl font-[1000] text-slate-950 tracking-tight leading-none">Mon Espace <span className="text-emerald-500">Immo</span></h1>
+              <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-3 flex items-center gap-2">
+                <LayoutGrid size={12} className="text-emerald-500"/> Gestionnaire de parc immobilier professionnel
+              </p>
+            </div>
           </div>
-          <div className="bg-emerald-50 px-6 py-3 rounded-2xl border border-emerald-100 hidden lg:block">
-            <p className="text-emerald-700 text-xs font-black uppercase tracking-wider flex items-center gap-2">
-              <Sparkles size={14} /> Certifié Partenaire Betna
-            </p>
+          <div className="bg-white px-6 py-4 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50 flex items-center gap-4">
+            <div className="text-right hidden sm:block">
+              <p className="text-xs font-black text-slate-950">{user?.name || "Propriétaire Betna"}</p>
+              <p className="text-[9px] text-emerald-600 font-bold uppercase tracking-widest">Compte Vérifié</p>
+            </div>
+            <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400">
+               <Building2 size={24} />
+            </div>
           </div>
-        </motion.div>
+        </div>
+
+        {/* Quick Stats Bento Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+          {[
+            { label: 'Biens Actifs', val: properties.length, icon: Building2, color: 'text-blue-500' },
+            { label: 'Vues (30j)', val: '1.2k', icon: Eye, color: 'text-purple-500' },
+            { label: 'Revenus Est.', val: '850k', icon: TrendingUp, color: 'text-emerald-500' },
+            { label: 'Status', val: 'Elite', icon: Sparkles, color: 'text-amber-500' },
+          ].map((stat, i) => (
+            <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+              <stat.icon className={`${stat.color} mb-3`} size={20} />
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{stat.label}</p>
+              <p className="text-2xl font-black text-slate-950">{stat.val}</p>
+            </div>
+          ))}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           
@@ -157,7 +175,7 @@ function DashboardPropriétaire() {
             animate={{ opacity: 1, x: 0 }}
             className="lg:col-span-4"
           >
-            <div className="bg-white p-8 rounded-[3rem] shadow-2xl shadow-slate-200/50 border border-white sticky top-28">
+            <div className="bg-white p-8 rounded-[3rem] shadow-2xl shadow-slate-200/60 border border-white sticky top-28">
               <div className="flex justify-between items-center mb-10">
                   <h2 className="text-2xl font-black text-slate-950 flex items-center gap-3">
                     {editingId ? <Edit3 className="text-sky-500" /> : <PlusCircle className="text-emerald-500" />} 
@@ -222,7 +240,6 @@ function DashboardPropriétaire() {
                   </div>
                 </div>
 
-                {/* Upload Section v4 */}
                 <div className="flex items-center justify-center w-full">
                   <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-[2rem] cursor-pointer border-slate-200 bg-slate-50 hover:bg-emerald-50/50 hover:border-emerald-300 transition-all duration-300">
                       <div className="flex flex-col items-center justify-center text-center px-4">
@@ -278,13 +295,13 @@ function DashboardPropriétaire() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -50 }}
                     key={property._id || property.id} 
-                    className="flex flex-col md:flex-row items-center bg-white p-5 rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-500 gap-8 group"
+                    className="flex flex-col md:flex-row items-center bg-white p-6 rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-slate-200/40 transition-all duration-500 gap-8 group"
                   >
-                    <div className="relative w-full md:w-56 h-44 flex-shrink-0">
+                    <div className="relative w-full md:w-60 h-48 flex-shrink-0 overflow-hidden rounded-[2.2rem]">
                       <img 
                         src={property.imageUrls?.[0] || "https://via.placeholder.com/300"} 
                         alt={property.title} 
-                        className="w-full h-full rounded-[2.2rem] object-cover border border-slate-50" 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
                       />
                       <div className="absolute top-4 left-4">
                         {getStatusBadge(property.status)}
@@ -294,32 +311,41 @@ function DashboardPropriétaire() {
                     <div className="flex-grow space-y-4 w-full">
                       <div className="flex justify-between items-start gap-4">
                         <div>
-                          <h3 className="font-black text-slate-950 text-2xl tracking-tighter group-hover:text-emerald-600 transition-colors">{property.title}</h3>
-                          <p className="text-slate-400 font-bold flex items-center gap-2 mt-1">
+                          <h3 className="font-black text-slate-950 text-2xl tracking-tighter group-hover:text-emerald-600 transition-colors uppercase leading-tight">{property.title}</h3>
+                          <p className="text-slate-400 font-bold flex items-center gap-2 mt-1 text-sm">
                             <MapPin size={14} className="text-emerald-500"/> {property.location}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-black text-slate-950 tracking-tighter">
+                          <p className="text-2xl font-[1000] text-slate-950 tracking-tighter">
                             {parseInt(property.price).toLocaleString('fr-FR')} 
-                            <span className="text-[10px] text-slate-400 ml-1.5 font-bold">FCFA</span>
+                            <span className="text-[10px] text-slate-400 ml-1.5 font-bold uppercase">CFA</span>
                           </p>
-                          <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest mt-2 inline-block border ${property.typeSejour === 'long' ? 'text-indigo-600 bg-indigo-50 border-indigo-100' : 'text-orange-600 bg-orange-50 border-orange-100'}`}>
+                          <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-[0.15em] mt-2 inline-block border ${property.typeSejour === 'long' ? 'text-indigo-600 bg-indigo-50 border-indigo-100' : 'text-orange-600 bg-orange-50 border-orange-100'}`}>
                             {property.typeSejour === 'long' ? 'Mensuel' : 'Journalier'}
                           </span>
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between pt-5 border-t border-slate-50">
-                        <div className="flex gap-6 text-slate-400 font-black text-[11px] uppercase tracking-wider">
-                          <span className="flex items-center gap-2"><BedDouble size={16} className="text-slate-300"/> {property.bedrooms || 0} CH.</span>
-                          <span className="flex items-center gap-2"><Bath size={16} className="text-slate-300"/> {property.bathrooms || 0} SDB</span>
+                        <div className="flex gap-5 text-slate-400 font-black text-[10px] uppercase tracking-[0.1em]">
+                          <span className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl"><BedDouble size={14} className="text-slate-300"/> {property.bedrooms || 0} Lits</span>
+                          <span className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl"><Bath size={14} className="text-slate-300"/> {property.bathrooms || 0} Sdb</span>
                         </div>
-                        <div className="flex gap-3">
-                            <button onClick={() => startEdit(property)} className="p-4 rounded-2xl bg-slate-50 text-slate-400 hover:bg-sky-50 hover:text-sky-600 transition-all shadow-sm">
+                        <div className="flex gap-2">
+                            {/* NOUVEAU BOUTON APERÇU */}
+                            <Link 
+                                to={`/catalogue?id=${property._id || property.id}`} 
+                                className="p-4 rounded-2xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-2 font-black text-[10px] uppercase tracking-widest shadow-sm"
+                            >
+                                <ExternalLink size={16} />
+                                <span className="hidden sm:inline">Aperçu</span>
+                            </Link>
+
+                            <button onClick={() => startEdit(property)} className="p-4 rounded-2xl bg-slate-50 text-slate-400 hover:bg-sky-50 hover:text-sky-600 transition-all">
                                 <Edit3 className="w-5 h-5" />
                             </button>
-                            <button onClick={() => deleteProperty(property._id || property.id)} className="p-4 rounded-2xl bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all shadow-sm">
+                            <button onClick={() => deleteProperty(property._id || property.id)} className="p-4 rounded-2xl bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all">
                                 <Trash2 className="w-5 h-5" />
                             </button>
                         </div>
@@ -335,7 +361,7 @@ function DashboardPropriétaire() {
                   className='text-center py-32 bg-white rounded-[4rem] border-2 border-dashed border-slate-100'
                 >
                     <Building2 className='w-20 h-20 text-slate-100 mx-auto mb-6'/>
-                    <p className="text-2xl font-black text-slate-200">Aucune propriété enregistrée</p>
+                    <p className="text-2xl font-black text-slate-200 uppercase tracking-tighter">Aucune annonce</p>
                     <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-2">Démarrer votre business sur Betna Immo</p>
                 </motion.div>
               )}

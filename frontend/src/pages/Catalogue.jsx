@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom'; // <-- AJOUTÉ : Pour lire l'ID dans l'URL
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { Search, ShieldCheck, Sparkles, SlidersHorizontal, Loader2 } from 'lucide-react';
 import PropertyCard from "../components/PropertyCard";
@@ -11,6 +12,24 @@ function Catalogue() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // --- LOGIQUE DE SCROLL (MODIF AJOUTÉE) ---
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const targetId = queryParams.get('id');
+
+  useEffect(() => {
+    if (!loading && targetId) {
+      const timer = setTimeout(() => {
+        const element = document.getElementById(`property-${targetId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 800); // Délai pour laisser le temps au layout de se stabiliser
+      return () => clearTimeout(timer);
+    }
+  }, [loading, targetId]);
+  // ------------------------------------------
 
   useEffect(() => {
     const fetchProperties = async () => {
@@ -70,9 +89,8 @@ function Catalogue() {
           </p>
         </div>
 
-        {/* --- BARRE DE FILTRES STICKY (Optimisée Tailwind v4) --- */}
+        {/* --- BARRE DE FILTRES STICKY --- */}
         <div className="max-w-5xl mx-auto sticky top-24 z-50">
-          {/* Utilisation de 'catalogue-glass' pour un flou stable au scroll */}
           <div className="catalogue-glass border border-white/40 shadow-2xl shadow-slate-200/50 rounded-[2.5rem] p-3 flex flex-col md:flex-row items-center gap-3">
             
             <div className="relative flex-grow w-full">
@@ -80,7 +98,7 @@ function Catalogue() {
               <input 
                 type="text"
                 placeholder="Rechercher par ville ou quartier..."
-                className="w-full pl-14 pr-4 py-4 rounded-full bg-slate-50/50 border-none focus:ring-2 focus:ring-emerald-500/20 font-semibold transition-all placeholder:text-slate-400"
+                className="w-full pl-14 pr-4 py-4 rounded-full bg-slate-50/50 border-none focus:ring-2 focus:ring-emerald-500/20 font-semibold transition-all placeholder:text-slate-400 outline-none"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -133,10 +151,18 @@ function Catalogue() {
               <AnimatePresence mode='popLayout'>
                 {filteredProperties.map((property) => (
                   <motion.div
+                    id={`property-${property.id}`} // <-- AJOUTÉ : Pour cibler l'élément
                     key={property.id}
                     layout
                     initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    animate={{ 
+                      opacity: 1, 
+                      scale: 1,
+                      // MODIF : Effet visuel si c'est le bien ciblé
+                      boxShadow: targetId === property.id ? "0 0 0 4px #10b981" : "none",
+                      backgroundColor: targetId === property.id ? "#f0fdf4" : "transparent",
+                      borderRadius: targetId === property.id ? "2.5rem" : "0px"
+                    }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.35, ease: "easeOut" }}
                   >
@@ -148,7 +174,7 @@ function Catalogue() {
           </LayoutGroup>
         )}
 
-        {/* État vide - Design épuré v4 */}
+        {/* État vide */}
         {!loading && !error && filteredProperties.length === 0 && (
           <motion.div 
             initial={{ opacity: 0 }} 
