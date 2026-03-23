@@ -38,8 +38,17 @@ const ProtectedRoute = ({ children, allowedRole }) => {
     return <Navigate to="/login" replace />;
   }
   
-  // 3. Si un rôle spécifique est requis (ex: admin)
-  if (allowedRole && user.role !== allowedRole) {
+  // 🔍 DEBUG : Affiche dans la console pour vérifier pourquoi ça bloque
+  if (allowedRole) {
+    console.log("--- Vérification Accès ---");
+    console.log("Email:", user.email);
+    console.log("Rôle actuel:", user.role);
+    console.log("Rôle requis:", allowedRole);
+  }
+
+  // 3. Vérification du rôle (insensible à la casse pour plus de sécurité)
+  if (allowedRole && user.role?.toLowerCase() !== allowedRole.toLowerCase()) {
+    console.warn("Accès refusé : Rôle insuffisant.");
     return <Navigate to="/" replace />;
   }
   
@@ -65,7 +74,7 @@ function App() {
         <div className="flex flex-col min-h-screen bg-white selection:bg-emerald-100 selection:text-emerald-900">
           <Header />
           
-          <main className="flex-grow pt-16"> {/* Padding-top pour ne pas être sous le header fixe */}
+          <main className="flex-grow pt-16">
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* 🌏 Routes Publiques */}
