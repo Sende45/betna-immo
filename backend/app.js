@@ -45,6 +45,9 @@ app.use('/api/biens', require('./routes/biens'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/admin', require('./routes/admin'));
 
+app.use('/api/favoris', require('./routes/favoris'));
+app.use('/api/visites', require('./routes/visites'));
+
 // ✅ AJOUT DE LA ROUTE DE PAIEMENT STRIPE
 // Assure-toi que le nom du fichier dans /routes est bien 'paymentRoutes'
 app.use('/api/payments', require('./routes/paymentRoutes'));

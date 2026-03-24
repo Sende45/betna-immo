@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Heart, CalendarCheck, Loader2, MapPin, ArrowRight, Bookmark, CheckCircle2, XCircle, Clock, Sparkles } from 'lucide-react';
+// Vérifie que Loader2 est bien présent dans les imports
+import { 
+  Heart, CalendarCheck, Loader2, MapPin, 
+  ArrowRight, Bookmark, CheckCircle2, XCircle, Clock, Sparkles 
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
@@ -14,14 +18,25 @@ function DashboardClient() {
     if (!user) return;
     try {
       setLoading(true);
-      // Utilisation de Promise.allSettled pour que si une requête échoue, l'autre s'affiche quand même
+      // Utilisation de Promise.allSettled pour éviter qu'une erreur 404 ne bloque tout l'affichage
       const [favRes, appRes] = await Promise.allSettled([
         api.get('/favoris/mes-favoris'),
         api.get('/visites/mes-visites')
       ]);
 
-      if (favRes.status === 'fulfilled') setFavorites(favRes.value.data);
-      if (appRes.status === 'fulfilled') setAppointments(appRes.value.data);
+      if (favRes.status === 'fulfilled') {
+        setFavorites(favRes.value.data);
+      } else {
+        console.error("Erreur Favoris:", favRes.reason);
+        setFavorites([]); // On initialise à vide si l'API échoue
+      }
+
+      if (appRes.status === 'fulfilled') {
+        setAppointments(appRes.value.data);
+      } else {
+        console.error("Erreur Visites:", appRes.reason);
+        setAppointments([]); // On initialise à vide si l'API échoue
+      }
 
     } catch (error) {
       console.error("Erreur critique Dashboard:", error);
@@ -62,7 +77,7 @@ function DashboardClient() {
           <div className="space-y-4">
             {favorites.length > 0 ? (
               favorites.map((fav) => (
-                <div key={fav._id} className="bg-white p-4 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-5">
+                <div key={fav._id} className="group bg-white p-4 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-5">
                   <div className="h-20 w-20 bg-slate-100 rounded-3xl overflow-hidden flex-shrink-0">
                     <img src={fav.propertyImage || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=200"} className="h-full w-full object-cover" alt="" />
                   </div>
@@ -95,7 +110,9 @@ function DashboardClient() {
                 <div key={app._id} className="bg-white p-5 rounded-[2.5rem] border border-slate-100 flex justify-between items-center shadow-sm">
                   <div>
                     <h3 className="font-black text-slate-900">{app.propertyTitle}</h3>
-                    <p className="text-[10px] font-black uppercase text-slate-400 mt-1">{new Date(app.visitDate).toLocaleDateString()}</p>
+                    <p className="text-[10px] font-black uppercase text-slate-400 mt-1">
+                      {app.visitDate ? new Date(app.visitDate).toLocaleDateString() : 'Date inconnue'}
+                    </p>
                   </div>
                   <span className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest ${app.status === 'Confirmé' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
                     {app.status || 'En attente'}
