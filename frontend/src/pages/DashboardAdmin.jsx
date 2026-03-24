@@ -2,8 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Users, ShieldCheck, UserX, Loader2, 
   Building2, CheckCircle2, XCircle, BarChart3, 
-  Search, Filter, AlertCircle, TrendingUp
+  Search, Filter, AlertCircle, TrendingUp,
+  ExternalLink, Trash2, ArrowLeft // Ajout des icônes manquantes
 } from 'lucide-react';
+import { Link } from 'react-router-dom'; // Ajout pour la navigation
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios'; 
 
@@ -17,15 +19,17 @@ function DashboardAdmin() {
   const fetchAdminData = useCallback(async () => {
     try {
       setLoading(true);
-      const [usersRes, pendingRes, totalRes] = await Promise.all([
+      // Utilisation de Promise.allSettled pour éviter qu'une erreur sur une route ne bloque tout le dashboard
+      const results = await Promise.allSettled([
         api.get('/admin/users'),
-        api.get('/biens?status=En attente'),
+        api.get('/biens?status=Examen'), // Ajusté pour correspondre à ton badge "Examen"
         api.get('/admin/stats/total-biens')
       ]);
 
-      setUsers(usersRes.data);
-      setPropertiesPending(pendingRes.data);
-      setTotalBiens(totalRes.data.count || 0);
+      if (results[0].status === 'fulfilled') setUsers(results[0].value.data);
+      if (results[1].status === 'fulfilled') setPropertiesPending(results[1].value.data);
+      if (results[2].status === 'fulfilled') setTotalBiens(results[2].value.data.count || 0);
+
     } catch (error) {
       console.error("Erreur Admin Fetch:", error);
     } finally {
@@ -50,10 +54,20 @@ function DashboardAdmin() {
   const validateProperty = async (propertyId) => {
     try {
       await api.patch(`/admin/biens/${propertyId}/validate`);
+      alert("Propriété validée avec succès !"); // Notification rapide
       fetchAdminData();
     } catch (error) {
       console.error(error);
     }
+  };
+
+  // NOUVELLE FONCTION : Suppression d'un bien
+  const deleteProperty = async (id) => {
+    if(!window.confirm("Supprimer définitivement ce bien du réseau ?")) return;
+    try { 
+      await api.delete(`/admin/biens/${id}`);
+      fetchAdminData();
+    } catch (error) { console.error(error); }
   };
 
   const StatsCard = ({ title, value, icon: Icon, color, trend }) => (
@@ -78,6 +92,10 @@ function DashboardAdmin() {
         {/* Admin Branding & Search */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+            {/* BOUTON RETOUR ACCUEIL AJOUTÉ */}
+            <Link to="/" className="text-[10px] font-black uppercase text-slate-400 hover:text-emerald-600 transition-colors tracking-widest flex items-center gap-2 mb-4">
+               <ArrowLeft size={12} /> Retour au site
+            </Link>
             <h1 className="text-4xl font-black text-slate-950 flex items-center gap-4 tracking-tighter">
               <div className="bg-emerald-500 p-2 rounded-xl shadow-lg shadow-emerald-200">
                 <ShieldCheck className="text-white w-8 h-8" />
@@ -133,7 +151,7 @@ function DashboardAdmin() {
                         >
                           <div className="flex justify-between items-start mb-6">
                             <div>
-                              <p className="font-black text-slate-900 text-lg leading-tight group-hover:text-emerald-600 transition-colors">{prop.title}</p>
+                              <p className="font-black text-slate-900 text-lg leading-tight group-hover:text-emerald-600 transition-colors uppercase">{prop.title}</p>
                               <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-2">{prop.location}</p>
                             </div>
                             <div className="text-right">
@@ -141,15 +159,19 @@ function DashboardAdmin() {
                                 <p className="text-[8px] font-bold text-slate-300">FCFA</p>
                             </div>
                           </div>
-                          <div className="flex gap-3">
+                          <div className="flex gap-2">
                             <button 
                               onClick={() => validateProperty(prop._id || prop.id)}
-                              className="flex-grow flex items-center justify-center gap-2 bg-slate-900 text-white py-4 rounded-2xl text-[10px] font-black hover:bg-emerald-600 transition-all shadow-lg shadow-slate-100 tracking-[0.2em]"
+                              className="flex-grow flex items-center justify-center gap-2 bg-emerald-600 text-white py-4 rounded-2xl text-[10px] font-black hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 tracking-[0.2em]"
                             >
-                              <CheckCircle2 size={16} /> VALIDER LE BIEN
+                              <CheckCircle2 size={16} /> VALIDER
                             </button>
-                            <button className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-rose-50 hover:text-rose-600 transition-all border border-transparent hover:border-rose-100">
-                              <XCircle size={20} />
+                            {/* BOUTON SUPPRIMER AJOUTÉ */}
+                            <button 
+                              onClick={() => deleteProperty(prop._id || prop.id)}
+                              className="p-4 bg-slate-50 text-slate-300 rounded-2xl hover:bg-rose-50 hover:text-rose-600 transition-all border border-transparent hover:border-rose-100"
+                            >
+                              <Trash2 size={20} />
                             </button>
                           </div>
                         </motion.div>
@@ -215,16 +237,25 @@ function DashboardAdmin() {
                               </div>
                             </td>
                             <td className="px-10 py-6 text-right">
-                              <button 
-                                onClick={() => toggleUserStatus(u._id || u.id, u.status || 'actif')}
-                                className={`p-4 rounded-2xl transition-all shadow-sm ${
-                                  u.status === 'bloqué' 
-                                  ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white hover:shadow-emerald-200' 
-                                  : 'bg-rose-50 text-rose-500 hover:bg-rose-600 hover:text-white hover:shadow-rose-200'
-                                }`}
-                              >
-                                {u.status === 'bloqué' ? <ShieldCheck size={22} /> : <UserX size={22} />}
-                              </button>
+                              <div className="flex justify-end gap-2">
+                                  <button 
+                                    onClick={() => toggleUserStatus(u._id || u.id, u.status || 'actif')}
+                                    className={`p-4 rounded-2xl transition-all shadow-sm ${
+                                      u.status === 'bloqué' 
+                                      ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white' 
+                                      : 'bg-rose-50 text-rose-500 hover:bg-rose-600 hover:text-white'
+                                    }`}
+                                  >
+                                    {u.status === 'bloqué' ? <ShieldCheck size={22} /> : <UserX size={22} />}
+                                  </button>
+                                  {/* BOUTON VOIR ANNONCES AJOUTÉ */}
+                                  <Link 
+                                    to={`/catalogue?search=${u.fullName}`} 
+                                    className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-slate-900 hover:text-white transition-all shadow-sm"
+                                  >
+                                    <ExternalLink size={22} />
+                                  </Link>
+                              </div>
                             </td>
                           </tr>
                         ))}
