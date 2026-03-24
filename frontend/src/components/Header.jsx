@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Menu, X, Home, Building, LogIn, UserCircle, LogOut, 
-  LayoutGrid, CreditCard, MessageSquare, ChevronRight
+  LayoutGrid, CreditCard, MessageSquare, ChevronRight, ShieldCheck
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -23,7 +23,7 @@ function Header() {
   const handleDashboardRedirect = () => {
     setIsOpen(false);
     if (!user) navigate('/login');
-    else navigate('/dashboard'); // Ton composant Dashboard gère déjà les rôles en interne
+    else navigate('/dashboard');
   };
 
   return (
@@ -45,14 +45,25 @@ function Header() {
             </span>
           </Link>
           
-          {/* Menu Desktop (v4 optimized) */}
+          {/* Menu Desktop */}
           <div className="hidden lg:flex items-center space-x-1 bg-slate-50/50 p-1 rounded-full border border-slate-100">
             <NavLink to="/" icon={Home} label="Accueil" active={location.pathname === "/"} />
             <NavLink to="/catalogue" icon={LayoutGrid} label="Catalogue" active={location.pathname === "/catalogue"} />
             <NavLink to="/chat" icon={MessageSquare} label="Assistant" active={location.pathname === "/chat"} />
             <NavLink to="/abonnement" icon={CreditCard} label="Abonnement" active={location.pathname === "/abonnement"} />
+            
+            {/* Lien Admin - Uniquement si user est admin */}
+            {user?.role === 'admin' && (
+              <NavLink 
+                to="/admin" 
+                icon={ShieldCheck} 
+                label="Admin" 
+                active={location.pathname.startsWith("/admin")} 
+              />
+            )}
           </div>
 
+          {/* Actions Utilisateur */}
           <div className="hidden lg:flex items-center gap-4">
             {user ? (
                 <div className="flex items-center gap-3">
@@ -93,7 +104,7 @@ function Header() {
         </div>
       </div>
 
-      {/* Menu Mobile (Framer Motion) */}
+      {/* Menu Mobile */}
       <AnimatePresence>
         {isOpen && (
           <motion.div 
@@ -106,6 +117,11 @@ function Header() {
             <MobileNavLink to="/catalogue" icon={LayoutGrid} label="Catalogue" onClick={() => setIsOpen(false)} />
             <MobileNavLink to="/chat" icon={MessageSquare} label="Assistant IA" onClick={() => setIsOpen(false)} />
             <MobileNavLink to="/abonnement" icon={CreditCard} label="Tarifs" onClick={() => setIsOpen(false)} />
+            
+            {/* Lien Admin Mobile */}
+            {user?.role === 'admin' && (
+              <MobileNavLink to="/admin" icon={ShieldCheck} label="Administration" onClick={() => setIsOpen(false)} />
+            )}
             
             <div className="pt-6 mt-6 border-t border-slate-50">
               {user ? (
@@ -136,6 +152,7 @@ function Header() {
   );
 }
 
+// Composants utilitaires pour la clarté
 const NavLink = ({ icon: Icon, label, to, active }) => (
   <Link 
     to={to} 
