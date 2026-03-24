@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
   Mail, Lock, Eye, EyeOff, User, Phone, 
-  Building2, ArrowRight, UserPlus, Sparkles, CheckCircle2
+  Building2, ArrowRight, UserPlus, Sparkles, CheckCircle2,
+  Loader2 // ✅ Ajouté ici pour éviter l'écran blanc
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; 
@@ -35,18 +36,10 @@ function Login() {
         };
         
         await register(email, password, role, fullName, phone, defaultSubscription);
-        
-        // Redirection simplifiée vers le dashboard unique (qui gère les sous-vues par rôle)
         navigate('/dashboard');
       } else {
         const user = await login(email, password);
-        
-        // Redirection intelligente
-        if (user?.role === 'admin') {
-          navigate('/dashboard'); // Ou une route admin spécifique si tu préfères
-        } else {
-          navigate('/dashboard');
-        }
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error("Erreur Auth:", error);
@@ -60,7 +53,6 @@ function Login() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden selection:bg-emerald-100">
       
-      {/* 🌌 Background Décoratif (Optimisé v4) */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-100/40 rounded-full blur-[100px]" />
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-100/40 rounded-full blur-[100px]" />
@@ -94,7 +86,6 @@ function Login() {
         transition={{ delay: 0.1 }}
         className="mt-10 sm:mx-auto sm:w-full sm:max-w-md relative z-10"
       >
-        {/* Utilisation de 'catalogue-glass' pour un rendu haut de gamme v4 */}
         <div className="catalogue-glass py-10 px-8 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] rounded-[3.5rem] border border-white">
           <form className="space-y-6" onSubmit={handleSubmit}>
             
