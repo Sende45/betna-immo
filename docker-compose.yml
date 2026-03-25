@@ -1,0 +1,30 @@
+services:
+  # Notre service Backend
+  api-betna:
+    build: ./backend
+    container_name: betna-backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    networks:
+      - betna-network
+
+  # Notre service Frontend
+  client-betna:
+    build: 
+      context: ./frontend
+      args:
+        # On dit à Vite où se trouve l'API au moment du build Docker
+        - VITE_API_URL=http://localhost:5000/api
+    container_name: betna-frontend
+    ports:
+      - "5173:80" # 👈 IMPORTANT : Ton PC (5173) -> Docker/Nginx (80)
+    depends_on:
+      - api-betna
+    networks:
+      - betna-network
+
+networks:
+  betna-network:
+    driver: bridge
